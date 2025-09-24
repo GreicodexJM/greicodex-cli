@@ -9,7 +9,7 @@ type VerifyOptions struct {
 	Recipe      *recipe.Recipe
 }
 
-// ProjectVerifier defines the port for the project verification service.
-type ProjectVerifier interface {
+// VerifierService defines the port for the project verification service.
+type VerifierService interface {
 	VerifyProject(options VerifyOptions) error
 }

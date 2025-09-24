@@ -1,23 +1,5 @@
 package stack
 
-// Stack represents a pre-defined, built-in technology stack.
-type Stack struct {
-	Name        string
-	Description string
-	Type        string // e.g., "code", "persistence", "deployment"
-	Provides    Provides
-}
-
-// Provides defines the specific technologies offered by a stack.
-type Provides struct {
-	Language             string
-	Tooling              string
-	Runtime              string
-	Persistence          string
-	DependencyManagement string
-	BuildReleaseRun      string
-}
-
 // Registry holds all the available built-in stacks.
 var Registry = []*Stack{
 	{

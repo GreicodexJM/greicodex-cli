@@ -18,7 +18,7 @@ var templateFiles embed.FS
 
 type service struct{}
 
-func NewService() inbound.Scaffolder {
+func NewService() inbound.ScaffolderService {
 	return &service{}
 }
 

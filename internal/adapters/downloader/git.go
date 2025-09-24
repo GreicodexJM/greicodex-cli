@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -19,7 +20,8 @@ func NewGitDownloader() *GitDownloader {
 
 // Download clones or pulls a remote repository into a local cache directory.
 func (d *GitDownloader) Download(ctx context.Context, url, branch, cacheDir string) error {
-	_, err := os.Stat(cacheDir)
+	gitDir := filepath.Join(cacheDir, ".git")
+	_, err := os.Stat(gitDir)
 	if os.IsNotExist(err) {
 		return d.clone(ctx, url, branch, cacheDir)
 	}

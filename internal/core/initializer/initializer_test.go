@@ -9,10 +9,12 @@ import (
 
 type mockFSRepo struct {
 	outbound.FSRepository
-	createDirErr  error
-	createFileErr error
-	cacheDir      string
-	cacheDirErr   error
+	createDirErr    error
+	createFileErr   error
+	cacheDir        string
+	cacheDirErr     error
+	readFileContent []byte
+	readFileErr     error
 }
 
 func (m *mockFSRepo) CreateDir(path string) error {
@@ -25,6 +27,10 @@ func (m *mockFSRepo) CreateFile(path string, content []byte) error {
 
 func (m *mockFSRepo) GetCacheDir(path string) (string, error) {
 	return m.cacheDir, m.cacheDirErr
+}
+
+func (m *mockFSRepo) ReadFile(path string) ([]byte, error) {
+	return m.readFileContent, m.readFileErr
 }
 
 type mockGitRepo struct {
@@ -61,7 +67,9 @@ func TestNewService(t *testing.T) {
 }
 
 func TestInitializeProject(t *testing.T) {
-	fsRepo := &mockFSRepo{}
+	fsRepo := &mockFSRepo{
+		readFileContent: []byte(`{"minVersion": "0.1.0"}`),
+	}
 	gitRepo := &mockGitRepo{}
 	downloader := &mockDownloader{}
 	service := NewService(fsRepo, gitRepo, downloader)
@@ -145,7 +153,9 @@ func TestInitializeProject_CreateBranchError(t *testing.T) {
 }
 
 func TestInitializeProject_NoGitInit(t *testing.T) {
-	fsRepo := &mockFSRepo{}
+	fsRepo := &mockFSRepo{
+		readFileContent: []byte(`{"minVersion": "0.1.0"}`),
+	}
 	gitRepo := &mockGitRepo{}
 	downloader := &mockDownloader{}
 	service := NewService(fsRepo, gitRepo, downloader)

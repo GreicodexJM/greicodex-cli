@@ -19,7 +19,7 @@ func NewService(
 	coverageParser outbound.CoverageParser,
 	secretScanner outbound.SecretScanner,
 	linterDetector outbound.LinterDetector,
-) inbound.ProjectVerifier {
+) inbound.VerifierService {
 	return &service{
 		coverageParser: coverageParser,
 		secretScanner:  secretScanner,

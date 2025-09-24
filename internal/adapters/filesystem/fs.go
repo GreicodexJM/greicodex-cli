@@ -27,3 +27,7 @@ func (r *repository) GetCacheDir(path string) (string, error) {
 	}
 	return filepath.Join(cacheDir, path), nil
 }
+
+func (r *repository) ReadFile(path string) ([]byte, error) {
+	return os.ReadFile(path)
+}

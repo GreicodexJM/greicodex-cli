@@ -1,6 +1,6 @@
 package inbound
 
-// ProjectInitializer defines the port for the project initialization service.
-type ProjectInitializer interface {
+// InitializerService defines the port for the project initialization service.
+type InitializerService interface {
 	InitializeProject(path string, gitInit bool) error
 }

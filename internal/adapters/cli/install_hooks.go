@@ -4,35 +4,38 @@ import (
 	"fmt"
 	"grei-cli/internal/adapters/git"
 	"grei-cli/internal/core/hooks"
-	"os"
+	"grei-cli/internal/ports/inbound"
 
 	"github.com/spf13/cobra"
 )
 
-var installHooksCmd = &cobra.Command{
-	Use:   "install-hooks [path]",
-	Short: "Instala los Git hooks estándar de Greicodex en el repositorio.",
-	Long: `Configura Git para usar el directorio '.githooks' del repositorio,
-asegurando que todos los desarrolladores usen los mismos hooks.`,
-	Args: cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		targetPath := "."
-		if len(args) > 0 {
-			targetPath = args[0]
-		}
+func AddInstallHooksCommand(root *cobra.Command) {
+	gitRepo := git.NewRepository()
+	hooksService := hooks.NewService(gitRepo)
 
-		gitRepo := git.NewRepository()
-		hooksService := hooks.NewService(gitRepo)
-
-		if err := hooksService.InstallHooks(targetPath); err != nil {
-			fmt.Fprintf(os.Stderr, "Error al instalar los Git hooks: %v\n", err)
-			os.Exit(1)
-		}
-
-		fmt.Println("Git hooks instalados exitosamente.")
-	},
+	cmd := NewInstallHooksCommand(hooksService)
+	root.AddCommand(cmd)
 }
 
-func AddInstallHooksCommand(root *cobra.Command) {
-	root.AddCommand(installHooksCmd)
+func NewInstallHooksCommand(hooksService inbound.HooksService) *cobra.Command {
+	return &cobra.Command{
+		Use:   "install-hooks [path]",
+		Short: "Instala los Git hooks estándar de Greicodex en el repositorio.",
+		Long: `Configura Git para usar el directorio '.githooks' del repositorio,
+asegurando que todos los desarrolladores usen los mismos hooks.`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			targetPath := "."
+			if len(args) > 0 {
+				targetPath = args[0]
+			}
+
+			if err := hooksService.InstallHooks(targetPath); err != nil {
+				return fmt.Errorf("error al instalar los Git hooks: %w", err)
+			}
+
+			fmt.Println("Git hooks instalados exitosamente.")
+			return nil
+		},
+	}
 }

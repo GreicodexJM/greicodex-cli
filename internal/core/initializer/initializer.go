@@ -7,7 +7,6 @@ import (
 	"grei-cli/internal/ports/inbound"
 	"grei-cli/internal/ports/outbound"
 	"grei-cli/internal/templates"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -15,8 +14,8 @@ import (
 )
 
 const (
-	templatesURL    = "https://github.com/Greicodex/greicodex-cli.git"
-	templatesBranch = "main"
+	templatesURL    = "https://github.com/GreicodexJM/greicodex-cli.git"
+	templatesBranch = "master"
 	templatesDir    = ".grei-cli/templates"
 	cliVersion      = "0.1.0" // This should be replaced with a dynamic version
 )
@@ -31,7 +30,7 @@ type service struct {
 	downloader outbound.Downloader
 }
 
-func NewService(fsRepo outbound.FSRepository, gitRepo outbound.GitRepository, downloader outbound.Downloader) inbound.ProjectInitializer {
+func NewService(fsRepo outbound.FSRepository, gitRepo outbound.GitRepository, downloader outbound.Downloader) inbound.InitializerService {
 	return &service{
 		fsRepo:     fsRepo,
 		gitRepo:    gitRepo,
@@ -110,7 +109,7 @@ func (s *service) InitializeProject(path string, gitInit bool) error {
 
 func (s *service) checkVersion(cacheDir string) error {
 	manifestPath := filepath.Join(cacheDir, "templates", "manifest.json")
-	manifestFile, err := os.ReadFile(manifestPath)
+	manifestFile, err := s.fsRepo.ReadFile(manifestPath)
 	if err != nil {
 		return fmt.Errorf("failed to read manifest file: %w", err)
 	}

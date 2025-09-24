@@ -9,7 +9,7 @@ type service struct {
 	gitRepo outbound.GitRepository
 }
 
-func NewService(gitRepo outbound.GitRepository) inbound.HookInstaller {
+func NewService(gitRepo outbound.GitRepository) inbound.HooksService {
 	return &service{
 		gitRepo: gitRepo,
 	}
