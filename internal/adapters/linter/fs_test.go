@@ -49,4 +49,14 @@ func TestCheckConfig(t *testing.T) {
 	if err == nil {
 		t.Error("CheckConfig() should have returned an error, but it did not")
 	}
+
+	// Test for a stat error
+	readOnlyFilePath := filepath.Join(tmpDir, "read-only-file")
+	if err := os.WriteFile(readOnlyFilePath, []byte{}, 0444); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+	_, err = detector.CheckConfig(readOnlyFilePath, "golangci-lint")
+	if err == nil {
+		t.Error("CheckConfig() should have returned an error, but it did not")
+	}
 }

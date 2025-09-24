@@ -132,3 +132,122 @@ func TestVerifyProject_MissingLinterConfig(t *testing.T) {
 		t.Error("Expected an error for missing linter config, but got none")
 	}
 }
+
+func TestVerifyProject_MissingPersistence(t *testing.T) {
+	// Arrange
+	tmpDir, _ := os.MkdirTemp("", "")
+	defer os.RemoveAll(tmpDir)
+	os.Create(filepath.Join(tmpDir, "coverage.out"))
+
+	service := NewService(&mockCoverageParser{}, &mockSecretScanner{}, &mockLinterDetector{})
+	options := inbound.VerifyOptions{
+		Path:        tmpDir,
+		MinCoverage: 80,
+		Recipe: &recipe.Recipe{
+			Persistence: recipe.Persistence{Type: "postgresql"},
+		},
+	}
+
+	// Act
+	err := service.VerifyProject(options)
+
+	// Assert
+	if err == nil {
+		t.Error("Expected an error for missing persistence, but got none")
+	}
+}
+
+func TestVerifyProject_MissingDeployment(t *testing.T) {
+	// Arrange
+	tmpDir, _ := os.MkdirTemp("", "")
+	defer os.RemoveAll(tmpDir)
+	os.Create(filepath.Join(tmpDir, "coverage.out"))
+
+	service := NewService(&mockCoverageParser{}, &mockSecretScanner{}, &mockLinterDetector{})
+	options := inbound.VerifyOptions{
+		Path:        tmpDir,
+		MinCoverage: 80,
+		Recipe: &recipe.Recipe{
+			Deployment: recipe.Deployment{Type: "kubernetes"},
+		},
+	}
+
+	// Act
+	err := service.VerifyProject(options)
+
+	// Assert
+	if err == nil {
+		t.Error("Expected an error for missing deployment, but got none")
+	}
+}
+
+type mockSecretScannerSecretsFound struct{}
+
+func (m *mockSecretScannerSecretsFound) Scan(path string) ([]string, error) {
+	return []string{"secret found"}, nil
+}
+
+func TestVerifyProject_SecretsFound(t *testing.T) {
+	// Arrange
+	tmpDir, _ := os.MkdirTemp("", "")
+	defer os.RemoveAll(tmpDir)
+	os.Create(filepath.Join(tmpDir, "coverage.out"))
+
+	service := NewService(&mockCoverageParser{}, &mockSecretScannerSecretsFound{}, &mockLinterDetector{})
+	options := inbound.VerifyOptions{
+		Path:        tmpDir,
+		MinCoverage: 80,
+		Recipe:      &recipe.Recipe{},
+	}
+
+	// Act
+	err := service.VerifyProject(options)
+
+	// Assert
+	if err == nil {
+		t.Error("Expected an error for secrets found, but got none")
+	}
+}
+
+func TestVerifyProject_MissingRequiredFiles(t *testing.T) {
+	// Arrange
+	tmpDir, _ := os.MkdirTemp("", "")
+	defer os.RemoveAll(tmpDir)
+	os.Create(filepath.Join(tmpDir, "coverage.out"))
+
+	service := NewService(&mockCoverageParser{}, &mockSecretScanner{}, &mockLinterDetector{})
+	options := inbound.VerifyOptions{
+		Path:        tmpDir,
+		MinCoverage: 80,
+		Recipe:      &recipe.Recipe{},
+	}
+
+	// Act
+	err := service.VerifyProject(options)
+
+	// Assert
+	if err == nil {
+		t.Error("Expected an error for missing required files, but got none")
+	}
+}
+
+func TestVerifyProject_MissingCoverageFile(t *testing.T) {
+	// Arrange
+	tmpDir, _ := os.MkdirTemp("", "")
+	defer os.RemoveAll(tmpDir)
+
+	service := NewService(&mockCoverageParser{}, &mockSecretScanner{}, &mockLinterDetector{})
+	options := inbound.VerifyOptions{
+		Path:        tmpDir,
+		MinCoverage: 80,
+		Recipe:      &recipe.Recipe{},
+	}
+
+	// Act
+	err := service.VerifyProject(options)
+
+	// Assert
+	if err == nil {
+		t.Error("Expected an error for missing coverage file, but got none")
+	}
+}
