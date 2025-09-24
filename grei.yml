@@ -1,13 +1,14 @@
 project:
-    name: EmpaticoSculptor
-    type: Aplicación Frontend
-    language: Python
+    name: CreativoSerpens
+    customer: Greicodex
+    type: API / Backend
 stack:
-    framework: Ninguno
-    linter: Ruff (Python)
-    testing: Pytest (Python)
-    cicd:
-        - GitLab CI
+    language: TypeScript
+    linter: ""
+    testing: ""
+    cicd: []
+api:
+    framework: Express
 deployment:
-    type: Serverless
-    provider: AWS
+    type: Kubernetes
+    provider: GCP

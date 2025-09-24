@@ -3,36 +3,29 @@
 ## 1. Current Status
 **Phase 1 - Core CLI (In Progress)**
 
-The project has a solid foundation. The `init` command has been significantly reworked to be an interactive TUI that generates a `grei.yml` project recipe file. This recipe is the cornerstone for making the other commands context-aware.
+The plugin system is now fully functional and includes built-in support for common tech stacks. The `init` command can now offer Symfony/LAMP and MERN stacks out of the box, in addition to any external plugins the user has installed. The survey logic correctly de-duplicates project types from multiple plugins, and the generated `grei.yml` is now richly populated from the chosen plugin's manifest.
 
 ### What Works
-- **Project Documentation:** The `memory-bank` is fully initialized.
+- **Project Documentation:** The `memory-bank` is fully initialized and up-to-date.
+- **Plugin Discovery:**
+  - [x] A `PluginScanner` finds both built-in and external plugins.
 - **`grei init` command:**
-  - [x] Interactive TUI for collecting project settings.
-  - [x] Generates a `grei.yml` recipe file.
-  - [x] Prevents re-initialization of existing projects.
-  - [x] Placeholder for template scaffolding.
+  - [x] Dynamically builds the survey from all available plugins.
+  - [x] De-duplicates project types.
+  - [x] Fully populates the `grei.yml` recipe from the chosen plugin.
+  - [x] Includes a "Custom" fallback.
 
 ### What's Left to Build (Phase 1)
+- **Create a Reference Plugin:**
+  - [ ] Build a simple `grei-mock-symfony` external plugin to test the system.
 - **`grei verify` command:**
-  - [ ] Read the `grei.yml` file.
-  - [ ] Implement linter detection based on the recipe.
-  - [ ] Expand coverage parsing for other languages.
-  - [ ] Add verification for CI/CD, Helm, and OpenTofu configurations.
-- **`grei install-hooks` command:**
-  - [ ] Implement logic to configure `core.hooksPath`.
-  - [ ] Ensure hooks are marked as executable.
+  - [ ] Read the `grei.yml` file to become context-aware.
 - **Template Scaffolding:**
-  - [ ] Implement the actual logic to copy templates based on the `grei.yml` recipe.
-- **Output Formatting:**
-  - [ ] Implement ANSI output for human-readable reports.
-  - [ ] Implement JSON output for CI/CD integration.
+  - [ ] Implement logic for the core CLI to invoke a `scaffold` command on the chosen plugin.
 
 ## 2. Known Issues
 - None at this time.
 
 ## 3. Evolution of Project Decisions
-- **Initial Decision:** The project will be built in Go using the Cobra framework and will follow a Hexagonal Architecture.
-  - **Reasoning:** This stack was chosen to create a performant, maintainable, and easily testable single-binary CLI.
-- **Pivotal Change:** The concept of a `grei.yml` **Project Recipe** was introduced.
-  - **Reasoning:** This makes the CLI's behavior explicit and configurable, rather than relying on implicit checks. It provides a single source of truth for project configuration, which is invaluable for both human developers and automated tools/AI agents.
+- **Pivotal Change:** The CLI now supports a **hybrid plugin model**.
+  - **Reasoning:** Combining built-in plugins with an extensible external plugin system provides the best of both worlds: immediate utility and long-term flexibility.

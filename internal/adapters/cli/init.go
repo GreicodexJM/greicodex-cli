@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"grei-cli/internal/adapters/plugin"
 	"grei-cli/internal/core/recipe"
 	"math/rand"
 	"os"
@@ -14,19 +15,6 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
-
-// surveyAnswers is a flat struct to avoid issues with survey's nested struct mapping.
-type surveyAnswers struct {
-	ProjectName        string
-	ProjectType        string
-	ProjectLanguage    string
-	StackFramework     string
-	StackLinter        string
-	StackTesting       string
-	StackCICD          []string
-	DeploymentType     string
-	DeploymentProvider string
-}
 
 var initCmd = &cobra.Command{
 	Use:   "init [path]",
@@ -48,36 +36,96 @@ de receta del proyecto.`,
 			os.Exit(1)
 		}
 
-		fmt.Println("🚀 ¡Bienvenido al inicializador de proyectos de Greicodex!")
-		fmt.Println("---------------------------------------------------------")
-		fmt.Println("Por favor, responde las siguientes preguntas para crear tu receta de proyecto.")
-
-		flatAnswers := surveyAnswers{}
-		err := survey.Ask(questions, &flatAnswers)
+		// 1. Discover available plugins
+		pluginScanner := plugin.NewScanner()
+		manifests, err := pluginScanner.Scan()
 		if err != nil {
-			color.Red("Error durante la encuesta: %v", err)
+			color.Red("Error al escanear plugins: %v", err)
 			os.Exit(1)
 		}
 
-		// Manually populate the nested recipe struct from the flat survey answers.
-		answers := recipe.Recipe{
-			Project: recipe.Project{
-				Name:     flatAnswers.ProjectName,
-				Type:     flatAnswers.ProjectType,
-				Language: flatAnswers.ProjectLanguage,
+		fmt.Println("🚀 ¡Bienvenido al inicializador de proyectos de Greicodex!")
+		fmt.Println("---------------------------------------------------------")
+
+		answers := recipe.Recipe{}
+
+		// 2. Build dynamic survey based on plugins, ensuring no duplicates.
+		projectTypeSet := make(map[string]bool)
+		for _, m := range manifests {
+			for _, v := range m.Provides {
+				projectTypeSet[v.ProjectType] = true
+			}
+		}
+
+		projectTypes := []string{"Custom"}
+		for pt := range projectTypeSet {
+			projectTypes = append(projectTypes, pt)
+		}
+
+		projectQuestions := []*survey.Question{
+			{
+				Name:     "name",
+				Prompt:   &survey.Input{Message: "¿Cuál es el nombre del proyecto?", Default: generateProjectName()},
+				Validate: survey.Required,
 			},
-			Stack: recipe.Stack{
-				Framework: flatAnswers.StackFramework,
-				Linter:    flatAnswers.StackLinter,
-				Testing:   flatAnswers.StackTesting,
-				CICD:      flatAnswers.StackCICD,
+			{
+				Name:     "customer",
+				Prompt:   &survey.Input{Message: "¿Quién es el cliente para este proyecto?", Default: "Greicodex"},
+				Validate: survey.Required,
 			},
-			Deployment: recipe.Deployment{
-				Type:     flatAnswers.DeploymentType,
-				Provider: flatAnswers.DeploymentProvider,
+			{
+				Name: "type",
+				Prompt: &survey.Select{
+					Message: "¿Qué tipo de aplicación estás construyendo?",
+					Options: projectTypes,
+					Default: "API / Backend",
+				},
 			},
 		}
 
+		if err := survey.Ask(projectQuestions, &answers.Project); err != nil {
+			handleSurveyError(err)
+		}
+
+		// 3. Handle conditional logic
+		if answers.Project.Type == "Custom" {
+			// Fallback to manual configuration if no plugin is chosen
+			if err := survey.Ask(baseStackQuestions, &answers.Stack); err != nil {
+				handleSurveyError(err)
+			}
+		} else {
+			// Pre-fill based on the chosen plugin vertical
+			for _, m := range manifests {
+				for _, v := range m.Provides {
+					if v.ProjectType == answers.Project.Type {
+						// Fully populate the stack from the plugin's vertical
+						answers.Stack.Language = v.Stack.Language
+						// This is a simplified mapping. A real implementation would be more robust.
+						if v.Stack.Framework != "" {
+							if answers.Project.Type == "Aplicación Web" {
+								if answers.WebApp == nil {
+									answers.WebApp = &recipe.WebApp{}
+								}
+								answers.WebApp.Framework = v.Stack.Framework
+							} else if answers.Project.Type == "API / Backend" {
+								if answers.Api == nil {
+									answers.Api = &recipe.Api{}
+								}
+								answers.Api.Framework = v.Stack.Framework
+							}
+						}
+						color.Green("✓ Usando la pila tecnológica del plugin '%s'.", m.Name)
+						break
+					}
+				}
+			}
+		}
+
+		if err := survey.Ask(deploymentQuestions, &answers.Deployment); err != nil {
+			handleSurveyError(err)
+		}
+
+		// 4. Generate recipe file
 		s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
 		s.Suffix = " Creando receta del proyecto (grei.yml)..."
 		s.Start()
@@ -89,8 +137,7 @@ de receta del proyecto.`,
 			os.Exit(1)
 		}
 
-		err = os.WriteFile(recipePath, yamlData, 0644)
-		if err != nil {
+		if err := os.WriteFile(recipePath, yamlData, 0644); err != nil {
 			s.Stop()
 			color.Red("Error al escribir el archivo grei.yml: %v", err)
 			os.Exit(1)
@@ -105,63 +152,31 @@ de receta del proyecto.`,
 	},
 }
 
-var questions = []*survey.Question{
+func handleSurveyError(err error) {
+	color.Red("Error durante la encuesta: %v", err)
+	os.Exit(1)
+}
+
+var baseStackQuestions = []*survey.Question{
 	{
-		Name:     "ProjectName",
-		Prompt:   &survey.Input{Message: "¿Cuál es el nombre del proyecto?", Default: generateProjectName()},
-		Validate: survey.Required,
-	},
-	{
-		Name:     "CustomerName",
-		Prompt:   &survey.Input{Message: "¿Cuál es el nombre del cliente?", Default: "Greicodex"},
-		Validate: survey.Required,
-	},
-	{
-		Name: "ProjectType",
-		Prompt: &survey.Select{Message: "¿Qué tipo de proyecto es?", Options: []string{
-			"Interfaz Movil",
-			"Interfaz Web",
-			"Interfaz Desktop",
-			"API de Servicio",
-			"API Serverless",
-			"Proceso por Lotes",
-			"Tarea Programada",
-			"Herramienta UI",
-			"Herramienta CLI",
-		}, Default: "Servicio Backend"},
-	},
-	{
-		Name:   "ProjectLanguage",
+		Name:   "language",
 		Prompt: &survey.Select{Message: "¿Qué lenguaje principal usarás?", Options: []string{"Go", "TypeScript", "Python"}, Default: "Go"},
 	},
+}
+
+var deploymentQuestions = []*survey.Question{
 	{
-		Name:   "StackFramework",
-		Prompt: &survey.Select{Message: "¿Qué framework principal usarás?", Options: []string{"Gin (Go)", "Cobra (Go)", "React (TypeScript)", "FastAPI (Python)", "Ninguno"}, Default: "Cobra (Go)"},
-	},
-	{
-		Name:   "StackLinter",
-		Prompt: &survey.Select{Message: "¿Qué linter prefieres?", Options: []string{"golangci-lint (Go)", "ESLint (TypeScript)", "Ruff (Python)"}, Default: "golangci-lint (Go)"},
-	},
-	{
-		Name:   "StackTesting",
-		Prompt: &survey.Select{Message: "¿Qué herramienta de pruebas usarás?", Options: []string{"go-test (Go)", "Jest (TypeScript)", "Pytest (Python)"}, Default: "go-test (Go)"},
-	},
-	{
-		Name:   "StackCICD",
-		Prompt: &survey.MultiSelect{Message: "¿Qué herramientas de CI/CD necesitas?", Options: []string{"GitHub Actions", "GitLab CI", "CircleCI"}},
-	},
-	{
-		Name:   "DeploymentType",
+		Name:   "type",
 		Prompt: &survey.Select{Message: "¿Cuál es el tipo de despliegue?", Options: []string{"Kubernetes", "Serverless", "Docker Swarm", "Binario"}, Default: "Kubernetes"},
 	},
 	{
-		Name:   "DeploymentProvider",
+		Name:   "provider",
 		Prompt: &survey.Select{Message: "¿Cuál es el proveedor de despliegue?", Options: []string{"GCP", "AWS", "Azure", "On-premise"}, Default: "GCP"},
 	},
 }
 
 func scaffoldTemplates(path string, recipe *recipe.Recipe) {
-	fmt.Printf("\n[i] Scaffolding templates for a '%s' project...\n", recipe.Project.Language)
+	fmt.Printf("\n[i] Scaffolding templates for a '%s' project...\n", recipe.Project.Type)
 }
 
 var adjectives = []string{
@@ -188,7 +203,7 @@ func generateProjectName() string {
 	rand.Seed(time.Now().UnixNano())
 	adj := adjectives[rand.Intn(len(adjectives))]
 	con := constellations[rand.Intn(len(constellations))]
-	return fmt.Sprintf("%s-%s", con, adj)
+	return fmt.Sprintf("%s%s", adj, con)
 }
 
 func AddInitCommand(root *cobra.Command) {

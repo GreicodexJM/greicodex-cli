@@ -1,27 +1,24 @@
 # 📘 Active Context — GRX CLI
 
 ## 1. Current Work Focus
-The primary focus is on **Phase 1: Core CLI Implementation**. With the `init` command now reworked, the next major goal is to make the `verify` command context-aware by reading the `grei.yml` recipe file.
+The plugin system is now robust, with the `init` command capable of fully populating the `grei.yml` recipe from a chosen plugin's manifest. The next logical step is to create a reference plugin to test the end-to-end flow.
 
 **Immediate Goals:**
-1.  **Integrate `grei.yml` into the `verify` command:** The verifier service should read the recipe to determine which checks to run (e.g., which linter config to look for).
-2.  **Implement Linter Detection:** Add the logic to the `verify` command to check for the existence of the linter configuration file specified in `grei.yml`.
-3.  **Expand Template Scaffolding:** Move beyond the placeholder and implement the actual logic for copying templates based on the recipe.
+1.  **Create a Mock Plugin:** Develop a simple mock external plugin (e.g., `grei-mock-symfony`) to test the discovery and scaffolding process end-to-end.
+2.  **Integrate `grei.yml` into the `verify` command.**
+3.  **Implement Template Scaffolding:** Move beyond the placeholder and implement the actual logic for copying templates based on the recipe.
 
 ## 2. Recent Changes & Decisions
-- **Decision:** Implemented the **Project Recipe** concept. The `grei init` command is now an interactive TUI that generates a `grei.yml` file. This file acts as the single source of truth for a project's configuration.
-- **Reasoning:** This was a critical change to ensure that the CLI's behavior is driven by explicit, version-controlled configuration, making it more robust and intelligent. It also provides essential context for AI agents.
-- **Dependencies Added:**
-  - `github.com/AlecAivazis/survey/v2` for the interactive TUI.
-  - `github.com/briandowns/spinner` for progress indicators.
-  - `gopkg.in/yaml.v3` for YAML marshalling.
+- **Decision:** The `init` command now populates the entire `recipe.Stack` and relevant sub-structs (`WebApp`, `Api`) from the chosen plugin manifest.
+- **Reasoning:** This makes the generated `grei.yml` a much richer and more accurate representation of the intended project architecture.
+- **Decision:** Added **built-in plugins** for Symfony/LAMP and MERN stacks.
+- **Decision:** The `init` command is now fully **plugin-driven**.
 
 ## 3. Next Steps
-- **Refactor `verifier.Service`:** Modify the service to accept the `recipe.Recipe` as an input.
-- **Create Linter Port/Adapter:** Design and implement the `LinterDetector` port and its corresponding filesystem adapter.
-- **Update `verify` command:** Wire the new components into the `verify` command adapter.
+- **Begin work on a simple external plugin** to serve as a reference implementation.
+- **Refactor `verifier.Service`** to be recipe-aware.
+- **Implement the `scaffold` command** on plugins.
 
 ## 4. Important Patterns & Preferences
-- **Recipe-Driven:** All commands should, where applicable, consult the `grei.yml` file to inform their behavior.
-- **Spanish-first:** All user-facing output should be in Spanish.
-- **Offline-first:** The CLI must be fully functional without an internet connection.
+- **Hybrid Plugin Model:** The CLI should support both built-in and external plugins.
+- **Standardized Discovery:** All plugins must adhere to the `discover` command protocol.
