@@ -2,6 +2,7 @@ package scaffolder
 
 import (
 	"grei-cli/internal/core/recipe"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,12 @@ import (
 )
 
 func TestScaffold_GoCli(t *testing.T) {
+	// Debugging: List all embedded files.
+	fs.WalkDir(templateFiles, ".", func(path string, d fs.DirEntry, err error) error {
+		t.Logf("Found embedded file: %s", path)
+		return nil
+	})
+
 	// Arrange
 	tmpDir, err := os.MkdirTemp("", "grei-test-*")
 	if err != nil {
