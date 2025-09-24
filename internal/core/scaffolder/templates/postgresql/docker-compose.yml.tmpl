@@ -5,8 +5,8 @@ services:
     image: postgres:15-alpine
     environment:
       POSTGRES_DB: {{ .Project.Name | ToLower }}_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: {{ .Project.Name | ToLower }}_user
+      POSTGRES_PASSWORD: {{ .Project.Name | ToLower }}_password
     ports:
       - "5432:5432"
     volumes:

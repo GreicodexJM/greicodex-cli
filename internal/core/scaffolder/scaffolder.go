@@ -54,6 +54,9 @@ func (s *service) copyTemplates(sourceDir, targetDir string, recipe *recipe.Reci
 
 		// The path in the target directory.
 		relativePath := strings.TrimPrefix(templatePath, sourceDir)
+		if strings.HasSuffix(relativePath, ".tmpl") {
+			relativePath = strings.TrimSuffix(relativePath, ".tmpl")
+		}
 		targetPath := filepath.Join(targetDir, relativePath)
 
 		if d.IsDir() {
@@ -67,7 +70,10 @@ func (s *service) copyTemplates(sourceDir, targetDir string, recipe *recipe.Reci
 		}
 
 		// Execute the template to replace variables like {{ .Project.Name }}
-		tmpl, err := template.New(d.Name()).Parse(string(rawContent))
+		funcMap := template.FuncMap{
+			"ToLower": strings.ToLower,
+		}
+		tmpl, err := template.New(d.Name()).Funcs(funcMap).Parse(string(rawContent))
 		if err != nil {
 			return fmt.Errorf("could not parse template %s: %w", templatePath, err)
 		}

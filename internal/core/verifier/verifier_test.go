@@ -22,9 +22,14 @@ func (m *mockSecretScanner) Scan(path string) ([]string, error) {
 	return nil, nil
 }
 
-type mockLinterDetector struct{}
+type mockLinterDetector struct {
+	checkConfigFunc func(path, linterName string) (bool, error)
+}
 
 func (m *mockLinterDetector) CheckConfig(path, linterName string) (bool, error) {
+	if m.checkConfigFunc != nil {
+		return m.checkConfigFunc(path, linterName)
+	}
 	return true, nil
 }
 
@@ -77,5 +82,53 @@ func TestVerifyProject_Success(t *testing.T) {
 	// Assert
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
+	}
+}
+
+func TestVerifyProject_CoverageTooLow(t *testing.T) {
+	// Arrange
+	tmpDir, _ := os.MkdirTemp("", "")
+	defer os.RemoveAll(tmpDir)
+	os.Create(filepath.Join(tmpDir, "coverage.out"))
+
+	coverageParser := &mockCoverageParser{} // Returns 85.0
+	service := NewService(coverageParser, &mockSecretScanner{}, &mockLinterDetector{})
+	options := inbound.VerifyOptions{
+		Path:        tmpDir,
+		MinCoverage: 90, // Higher than mock parser's return value
+		Recipe:      &recipe.Recipe{},
+	}
+
+	// Act
+	err := service.VerifyProject(options)
+
+	// Assert
+	if err == nil {
+		t.Error("Expected an error for low coverage, but got none")
+	}
+}
+
+func TestVerifyProject_MissingLinterConfig(t *testing.T) {
+	// Arrange
+	tmpDir, _ := os.MkdirTemp("", "")
+	defer os.RemoveAll(tmpDir)
+	os.Create(filepath.Join(tmpDir, "coverage.out"))
+
+	linterDetector := &mockLinterDetector{checkConfigFunc: func(path, linterName string) (bool, error) {
+		return false, nil // Simulate not found
+	}}
+	service := NewService(&mockCoverageParser{}, &mockSecretScanner{}, linterDetector)
+	options := inbound.VerifyOptions{
+		Path:        tmpDir,
+		MinCoverage: 80,
+		Recipe:      &recipe.Recipe{Stack: recipe.Stack{Linter: "golangci-lint"}},
+	}
+
+	// Act
+	err := service.VerifyProject(options)
+
+	// Assert
+	if err == nil {
+		t.Error("Expected an error for missing linter config, but got none")
 	}
 }

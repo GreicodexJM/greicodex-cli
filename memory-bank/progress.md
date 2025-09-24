@@ -3,7 +3,7 @@
 ## 1. Current Status
 **Phase 1 - Core CLI (In Progress)**
 
-Unit tests have been added for the `verifier.Service`, achieving **85% code coverage** for that package. This establishes a strong testing foundation for the CLI's core logic.
+Unit tests have been added for the `scaffolder.Service`, achieving **77.4% code coverage** for that package. This expands our testing foundation to another critical piece of core logic.
 
 ### What Works
 - **Project Documentation:** The `memory-bank` is fully up-to-date.
@@ -18,12 +18,13 @@ Unit tests have been added for the `verifier.Service`, achieving **85% code cove
   - [x] Performs recipe-aware checks for the linter, persistence, and deployment layers.
 - **Testing:**
     - [x] The `verifier` package has >80% test coverage.
+    - [x] The `scaffolder` package has >75% test coverage.
 
 ### What's Left to Build (Phase 1)
+- **Increase Test Coverage:**
+    - [x] Add more test cases to the `scaffolder` to reach >80% coverage.
 - **Expand `verify` Checks:**
   - [ ] Add other recipe-aware checks.
-- **Expand Template Scaffolding:**
-  - [ ] Add more stack-specific templates.
 - **Add More Stacks:**
     - [ ] Add a `persistence` stack for MySQL.
 
@@ -31,5 +32,5 @@ Unit tests have been added for the `verifier.Service`, achieving **85% code cove
 - Overall test coverage for the project is still low, but the most critical core logic is now well-tested.
 
 ## 3. Evolution of Project Decisions
-- **Pivotal Change:** Added **unit tests** for the `verifier.Service`.
-  - **Reasoning:** This ensures the quality and maintainability of the CLI's core verification logic and serves as a foundation for future testing efforts.
+- **Pivotal Change:** Added **unit tests** for the `scaffolder.Service`.
+  - **Reasoning:** This ensures the quality and maintainability of the CLI's core scaffolding logic.
