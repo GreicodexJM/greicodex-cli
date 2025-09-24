@@ -1,24 +1,27 @@
 # 📘 Active Context — GRX CLI
 
 ## 1. Current Work Focus
-The primary focus is on **Phase 1: Core CLI Implementation**. This involves building the foundational commands and features of the GRX CLI.
+The primary focus is on **Phase 1: Core CLI Implementation**. With the `init` command now reworked, the next major goal is to make the `verify` command context-aware by reading the `grei.yml` recipe file.
 
 **Immediate Goals:**
-1.  **Set up the Go project structure:** Create the directory layout as defined in `techContext.md`.
-2.  **Implement the `grei init` command:** This is the first command to be built. It will initialize a new project with the standard Greicodex structure and templates.
-3.  **Embed initial templates:** Create a basic set of templates (e.g., `README.md`, `.gitignore`) and embed them into the binary using `go:embed`.
+1.  **Integrate `grei.yml` into the `verify` command:** The verifier service should read the recipe to determine which checks to run (e.g., which linter config to look for).
+2.  **Implement Linter Detection:** Add the logic to the `verify` command to check for the existence of the linter configuration file specified in `grei.yml`.
+3.  **Expand Template Scaffolding:** Move beyond the placeholder and implement the actual logic for copying templates based on the recipe.
 
 ## 2. Recent Changes & Decisions
-- **Decision:** The `memory-bank` has been initialized with the core documentation (`projectbrief.md`, `productContext.md`, `systemPatterns.md`, `techContext.md`). This provides a solid foundation for the project's goals, architecture, and technical stack.
-- **Decision:** The project will be built using Go and the Cobra framework, following a Hexagonal Architecture. This decision was made to ensure the CLI is performant, maintainable, and easy to test.
+- **Decision:** Implemented the **Project Recipe** concept. The `grei init` command is now an interactive TUI that generates a `grei.yml` file. This file acts as the single source of truth for a project's configuration.
+- **Reasoning:** This was a critical change to ensure that the CLI's behavior is driven by explicit, version-controlled configuration, making it more robust and intelligent. It also provides essential context for AI agents.
+- **Dependencies Added:**
+  - `github.com/AlecAivazis/survey/v2` for the interactive TUI.
+  - `github.com/briandowns/spinner` for progress indicators.
+  - `gopkg.in/yaml.v3` for YAML marshalling.
 
 ## 3. Next Steps
-- **Initialize Go module:** Run `go mod init` to create the `go.mod` file.
-- **Create the main application entry point:** Set up `cmd/grei/main.go`.
-- **Implement the root command:** Use Cobra to create the main `grei` command.
-- **Add the `init` subcommand:** Implement the `grei init` command, including the logic to copy embedded templates to the target directory.
+- **Refactor `verifier.Service`:** Modify the service to accept the `recipe.Recipe` as an input.
+- **Create Linter Port/Adapter:** Design and implement the `LinterDetector` port and its corresponding filesystem adapter.
+- **Update `verify` command:** Wire the new components into the `verify` command adapter.
 
 ## 4. Important Patterns & Preferences
-- **Spanish-first:** All user-facing output (command descriptions, help text, messages) should be in Spanish.
-- **Offline-first:** The CLI must be fully functional without an internet connection. All essential resources, like templates, must be embedded.
-- **Clean Code and SOLID:** Adhere to the principles outlined in the `.clinerules` to ensure the codebase is clean, modular, and maintainable.
+- **Recipe-Driven:** All commands should, where applicable, consult the `grei.yml` file to inform their behavior.
+- **Spanish-first:** All user-facing output should be in Spanish.
+- **Offline-first:** The CLI must be fully functional without an internet connection.

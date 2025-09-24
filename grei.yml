@@ -1,0 +1,13 @@
+project:
+    name: EmpaticoSculptor
+    type: Aplicación Frontend
+    language: Python
+stack:
+    framework: Ninguno
+    linter: Ruff (Python)
+    testing: Pytest (Python)
+    cicd:
+        - GitLab CI
+deployment:
+    type: Serverless
+    provider: AWS
