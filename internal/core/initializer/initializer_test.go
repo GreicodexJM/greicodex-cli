@@ -1,6 +1,7 @@
 package initializer
 
 import (
+	"context"
 	"errors"
 	"grei-cli/internal/ports/outbound"
 	"testing"
@@ -10,6 +11,8 @@ type mockFSRepo struct {
 	outbound.FSRepository
 	createDirErr  error
 	createFileErr error
+	cacheDir      string
+	cacheDirErr   error
 }
 
 func (m *mockFSRepo) CreateDir(path string) error {
@@ -20,10 +23,23 @@ func (m *mockFSRepo) CreateFile(path string, content []byte) error {
 	return m.createFileErr
 }
 
+func (m *mockFSRepo) GetCacheDir(path string) (string, error) {
+	return m.cacheDir, m.cacheDirErr
+}
+
 type mockGitRepo struct {
 	outbound.GitRepository
 	initErr         error
 	createBranchErr error
+}
+
+type mockDownloader struct {
+	outbound.Downloader
+	downloadErr error
+}
+
+func (m *mockDownloader) Download(ctx context.Context, url, branch, cacheDir string) error {
+	return m.downloadErr
 }
 
 func (m *mockGitRepo) Init(path string) error {
@@ -37,7 +53,8 @@ func (m *mockGitRepo) CreateBranch(path, branchName string) error {
 func TestNewService(t *testing.T) {
 	fsRepo := &mockFSRepo{}
 	gitRepo := &mockGitRepo{}
-	service := NewService(fsRepo, gitRepo)
+	downloader := &mockDownloader{}
+	service := NewService(fsRepo, gitRepo, downloader)
 	if service == nil {
 		t.Error("NewService() should not return nil")
 	}
@@ -46,7 +63,8 @@ func TestNewService(t *testing.T) {
 func TestInitializeProject(t *testing.T) {
 	fsRepo := &mockFSRepo{}
 	gitRepo := &mockGitRepo{}
-	service := NewService(fsRepo, gitRepo)
+	downloader := &mockDownloader{}
+	service := NewService(fsRepo, gitRepo, downloader)
 
 	err := service.InitializeProject("/tmp/test-project", true)
 	if err != nil {
@@ -54,10 +72,35 @@ func TestInitializeProject(t *testing.T) {
 	}
 }
 
+func TestInitializeProject_GetCacheDirError(t *testing.T) {
+	fsRepo := &mockFSRepo{cacheDirErr: errors.New("cache dir error")}
+	gitRepo := &mockGitRepo{}
+	downloader := &mockDownloader{}
+	service := NewService(fsRepo, gitRepo, downloader)
+
+	err := service.InitializeProject("/tmp/test-project", true)
+	if err == nil {
+		t.Error("InitializeProject() should have returned an error, but it did not")
+	}
+}
+
+func TestInitializeProject_DownloadError(t *testing.T) {
+	fsRepo := &mockFSRepo{}
+	gitRepo := &mockGitRepo{}
+	downloader := &mockDownloader{downloadErr: errors.New("download error")}
+	service := NewService(fsRepo, gitRepo, downloader)
+
+	err := service.InitializeProject("/tmp/test-project", true)
+	if err == nil {
+		t.Error("InitializeProject() should have returned an error, but it did not")
+	}
+}
+
 func TestInitializeProject_CreateDirError(t *testing.T) {
 	fsRepo := &mockFSRepo{createDirErr: errors.New("create dir error")}
 	gitRepo := &mockGitRepo{}
-	service := NewService(fsRepo, gitRepo)
+	downloader := &mockDownloader{}
+	service := NewService(fsRepo, gitRepo, downloader)
 
 	err := service.InitializeProject("/tmp/test-project", true)
 	if err == nil {
@@ -68,7 +111,8 @@ func TestInitializeProject_CreateDirError(t *testing.T) {
 func TestInitializeProject_CreateFileError(t *testing.T) {
 	fsRepo := &mockFSRepo{createFileErr: errors.New("create file error")}
 	gitRepo := &mockGitRepo{}
-	service := NewService(fsRepo, gitRepo)
+	downloader := &mockDownloader{}
+	service := NewService(fsRepo, gitRepo, downloader)
 
 	err := service.InitializeProject("/tmp/test-project", true)
 	if err == nil {
@@ -79,7 +123,8 @@ func TestInitializeProject_CreateFileError(t *testing.T) {
 func TestInitializeProject_GitInitError(t *testing.T) {
 	fsRepo := &mockFSRepo{}
 	gitRepo := &mockGitRepo{initErr: errors.New("git init error")}
-	service := NewService(fsRepo, gitRepo)
+	downloader := &mockDownloader{}
+	service := NewService(fsRepo, gitRepo, downloader)
 
 	err := service.InitializeProject("/tmp/test-project", true)
 	if err == nil {
@@ -90,7 +135,8 @@ func TestInitializeProject_GitInitError(t *testing.T) {
 func TestInitializeProject_CreateBranchError(t *testing.T) {
 	fsRepo := &mockFSRepo{}
 	gitRepo := &mockGitRepo{createBranchErr: errors.New("create branch error")}
-	service := NewService(fsRepo, gitRepo)
+	downloader := &mockDownloader{}
+	service := NewService(fsRepo, gitRepo, downloader)
 
 	err := service.InitializeProject("/tmp/test-project", true)
 	if err == nil {
@@ -101,7 +147,8 @@ func TestInitializeProject_CreateBranchError(t *testing.T) {
 func TestInitializeProject_NoGitInit(t *testing.T) {
 	fsRepo := &mockFSRepo{}
 	gitRepo := &mockGitRepo{}
-	service := NewService(fsRepo, gitRepo)
+	downloader := &mockDownloader{}
+	service := NewService(fsRepo, gitRepo, downloader)
 
 	err := service.InitializeProject("/tmp/test-project", false)
 	if err != nil {

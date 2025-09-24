@@ -1,0 +1,17 @@
+project:
+    name: greicodex-cli
+    customer: Greicodex
+    type: go-cli
+stack:
+    language: Go
+    tooling: Cobra
+    linter: ""
+    testing: ""
+    cicd: []
+    dependencyManagement: Go Modules
+    buildReleaseRun: go build, ./binary
+persistence:
+    type: Ninguna
+deployment:
+    type: Ninguno
+    provider: ""

@@ -2,6 +2,10 @@ package cli
 
 import (
 	"fmt"
+	"grei-cli/internal/adapters/downloader"
+	"grei-cli/internal/adapters/filesystem"
+	"grei-cli/internal/adapters/git"
+	"grei-cli/internal/core/initializer"
 	"grei-cli/internal/core/recipe"
 	"grei-cli/internal/core/scaffolder"
 	"grei-cli/internal/core/stack"
@@ -136,6 +140,15 @@ de receta del proyecto.`,
 		color.Green("✅ Receta del proyecto creada exitosamente en '%s'.", recipePath)
 
 		// 4. Scaffold initial templates
+		fsRepo := filesystem.NewRepository()
+		gitRepo := git.NewRepository()
+		downloader := downloader.NewGitDownloader()
+		initializerService := initializer.NewService(fsRepo, gitRepo, downloader)
+		if err := initializerService.InitializeProject(targetPath, true); err != nil {
+			color.Red("❌ Error durante la inicialización: %v", err)
+			os.Exit(1)
+		}
+
 		scaffolderService := scaffolder.NewService()
 		if err := scaffolderService.Scaffold(targetPath, &answers); err != nil {
 			color.Red("❌ Error durante el scaffolding: %v", err)

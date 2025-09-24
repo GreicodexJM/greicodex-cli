@@ -4,4 +4,5 @@ package outbound
 type FSRepository interface {
 	CreateDir(path string) error
 	CreateFile(path string, content []byte) error
+	GetCacheDir(path string) (string, error)
 }
