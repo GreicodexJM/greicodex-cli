@@ -1,92 +1,39 @@
 # 📘 System Patterns — GRX CLI
 
 ## 1. Architecture Overview
-The GRX CLI is designed using **Hexagonal Architecture (Ports and Adapters)** to ensure a clear separation between the core application logic and external dependencies like the user interface (CLI), file system, and external tools. This approach enhances modularity, testability, and maintainability.
+The GRX CLI is designed using a **Compositional Internal Stack Architecture** built on the principles of **Hexagonal Architecture (Ports and Adapters)**. This ensures a clear separation between the core CLI logic and the various built-in technology stacks it supports.
+
+### The "Project Composer" Model
+The `grei init` command acts as a "Project Composer." It guides the user through a series of questions to compose their project's recipe by selecting from different categories of pre-defined, built-in stacks.
 
 ```mermaid
 graph TD
-    subgraph External
+    subgraph User
         A[CLI User]
-        B[File System]
-        C[Plugins e.g., grei-helm]
-        D[CI/CD Pipeline]
     end
 
-    subgraph Adapters
-        E[CLI Commands (Cobra)]
-        F[File System Repository]
-        G[Plugin Executor]
-        H[JSON/ANSI Reporter]
+    subgraph CoreCLI
+        B[grei init]
+        C[Internal Stack Registry]
+        D[Compositional Survey]
+        E[Recipe Assembler]
     end
 
-    subgraph Ports
-        I[Inbound Port: CLIService]
-        J[Outbound Port: FSRepository]
-        K[Outbound Port: PluginRepository]
-        L[Outbound Port: ReportPresenter]
-    end
-
-    subgraph Core Logic (Domain)
-        M[ProjectInitializer]
-        N[ProjectVerifier]
-        O[HookInstaller]
-        P[Scaffolder]
-    end
-
-    A -- invokes --> E
-    D -- invokes --> E
-    E -- calls --> I
-
-    I -- uses --> M
-    I -- uses --> N
-    I -- uses --> O
-    I -- uses --> P
-
-    M -- uses --> J
-    N -- uses --> J
-    O -- uses --> J
-    P -- uses --> J
-    N -- uses --> K
-
-    J -- implemented by --> F
-    K -- implemented by --> G
-    L -- implemented by --> H
-
-    F -- interacts with --> B
-    G -- interacts with --> C
-    H -- outputs to --> A
-    H -- outputs to --> D
-
-    M -- notifies --> L
-    N -- notifies --> L
+    A -- invokes --> B
+    B -- reads from --> C
+    B -- runs --> D
+    D -- creates --> E
+    E -- creates --> F[grei.yml]
 ```
 
-## 2. Core Components (Domain)
-The core contains the pure business logic of the application, with no dependencies on external technologies.
-- **`ProjectInitializer`**: Handles the logic for creating a new project structure from embedded templates.
-- **`ProjectVerifier`**: Contains the rules and logic for auditing a project, including secret scanning, linting, and coverage analysis.
-- **`HookInstaller`**: Manages the logic for configuring Git hooks.
-- **`Scaffolder`**: Implements the logic for injecting specific templates (e.g., a new stack) into an existing project.
+## 2. The `init` Command Workflow
+The initialization process follows a clear, multi-phase approach:
 
-## 3. Ports (Interfaces)
-Ports are the interfaces that define the communication contracts between the core and the outside world.
-- **Inbound Ports**:
-  - **`CLIService`**: Defines the entry points for all user-driven actions, such as `init`, `verify`, and `scaffold`.
-- **Outbound Ports**:
-  - **`FSRepository`**: Defines operations for interacting with the file system, such as reading, writing, and creating files/directories.
-  - **`PluginRepository`**: Defines how to discover and execute external plugins.
-  - **`ReportPresenter`**: Defines the interface for presenting results to the user, either in ANSI or JSON format.
+1.  **Discovery:** The `grei init` command starts by reading the `stack.Registry` to find all available built-in stacks.
+2.  **Composition:** The core CLI presents the user with a series of high-level questions, one for each stack category (e.g., "Select a Code Stack," "Select a Persistence Stack"). The options for each question are dynamically populated from the internal registry.
+3.  **Assembly:** The user's selections are gathered, and the `Recipe Assembler` merges them into a single, comprehensive `grei.yml` file.
 
-## 4. Adapters (Implementations)
-Adapters are the concrete implementations of the ports that bridge the core logic with external systems.
-- **Inbound Adapters**:
-  - **CLI Commands**: Implemented using a library like `Cobra`, these adapters parse user input and call the `CLIService`.
-- **Outbound Adapters**:
-  - **`FileSystemRepository`**: The concrete implementation that uses Go's `os` and `io/fs` packages to interact with the local file system.
-  - **`PluginExecutor`**: Discovers executables named `grei-<plugin>` in the system's `PATH` and communicates with them over `stdin/stdout` using a JSON protocol.
-  - **`JSON/ANSI Reporter`**: Implements the `ReportPresenter` to format output for the console or for machine consumption.
-
-## 5. Key Technical Decisions
-- **Dependency Inversion**: The core logic depends on abstractions (ports), not on concrete implementations (adapters). This allows for easy testing and swapping of external dependencies. For example, the `FileSystemRepository` can be replaced with an in-memory mock for unit tests.
-- **Embedded Templates**: All templates will be embedded directly into the Go binary using `go:embed`. This ensures the CLI is fully functional offline. The system will also support overriding these templates with versions from `~/.config/grei/templates` or a local `.grei/templates` directory.
-- **Plugin Protocol**: Plugins are standalone executables that communicate with the main CLI via a simple JSON-based protocol on `stdin` and `stdout`. This makes the plugin system language-agnostic.
+## 3. Key Technical Decisions
+- **Single Binary:** All stacks are defined directly within the Go binary. There is no external plugin system. This simplifies distribution and ensures that the tool's capabilities are always consistent and self-contained.
+- **Composition over Inheritance:** This model allows users to compose their ideal project stack by mixing and matching best-of-breed internal stacks, rather than being locked into a single, monolithic stack.
+- **Extensibility through Contribution:** To add a new stack, a developer must add a new entry to the internal `stack.Registry` and submit a pull request. This ensures that all available stacks are centrally managed and vetted according to Greicodex standards.

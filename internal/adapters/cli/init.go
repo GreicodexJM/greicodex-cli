@@ -2,8 +2,9 @@ package cli
 
 import (
 	"fmt"
-	"grei-cli/internal/adapters/plugin"
 	"grei-cli/internal/core/recipe"
+	"grei-cli/internal/core/scaffolder"
+	"grei-cli/internal/core/stack"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -36,31 +37,13 @@ de receta del proyecto.`,
 			os.Exit(1)
 		}
 
-		// 1. Discover available plugins
-		pluginScanner := plugin.NewScanner()
-		manifests, err := pluginScanner.Scan()
-		if err != nil {
-			color.Red("Error al escanear plugins: %v", err)
-			os.Exit(1)
-		}
-
 		fmt.Println("🚀 ¡Bienvenido al inicializador de proyectos de Greicodex!")
 		fmt.Println("---------------------------------------------------------")
 
 		answers := recipe.Recipe{}
 
-		// 2. Build dynamic survey based on plugins, ensuring no duplicates.
-		projectTypeSet := make(map[string]bool)
-		for _, m := range manifests {
-			for _, v := range m.Provides {
-				projectTypeSet[v.ProjectType] = true
-			}
-		}
-
-		projectTypes := []string{"Custom"}
-		for pt := range projectTypeSet {
-			projectTypes = append(projectTypes, pt)
-		}
+		// 1. Build dynamic survey from the internal stack registry.
+		codeStacks, persistenceStacks, deploymentStacks := categorizeStacks()
 
 		projectQuestions := []*survey.Question{
 			{
@@ -76,9 +59,9 @@ de receta del proyecto.`,
 			{
 				Name: "type",
 				Prompt: &survey.Select{
-					Message: "¿Qué tipo de aplicación estás construyendo?",
-					Options: projectTypes,
-					Default: "API / Backend",
+					Message: "¿Qué tipo de pila de código usarás?",
+					Options: codeStacks,
+					Default: "go-cli",
 				},
 			},
 		}
@@ -87,45 +70,51 @@ de receta del proyecto.`,
 			handleSurveyError(err)
 		}
 
-		// 3. Handle conditional logic
+		// 2. Handle conditional logic for each stack type
 		if answers.Project.Type == "Custom" {
-			// Fallback to manual configuration if no plugin is chosen
+			// Fallback to manual configuration
 			if err := survey.Ask(baseStackQuestions, &answers.Stack); err != nil {
 				handleSurveyError(err)
 			}
 		} else {
-			// Pre-fill based on the chosen plugin vertical
-			for _, m := range manifests {
-				for _, v := range m.Provides {
-					if v.ProjectType == answers.Project.Type {
-						// Fully populate the stack from the plugin's vertical
-						answers.Stack.Language = v.Stack.Language
-						// This is a simplified mapping. A real implementation would be more robust.
-						if v.Stack.Framework != "" {
-							if answers.Project.Type == "Aplicación Web" {
-								if answers.WebApp == nil {
-									answers.WebApp = &recipe.WebApp{}
-								}
-								answers.WebApp.Framework = v.Stack.Framework
-							} else if answers.Project.Type == "API / Backend" {
-								if answers.Api == nil {
-									answers.Api = &recipe.Api{}
-								}
-								answers.Api.Framework = v.Stack.Framework
-							}
-						}
-						color.Green("✓ Usando la pila tecnológica del plugin '%s'.", m.Name)
-						break
-					}
+			// Pre-fill based on the chosen stack
+			for _, s := range stack.Registry {
+				if s.Name == answers.Project.Type {
+					answers.Stack.Language = s.Provides.Language
+					answers.Stack.Tooling = s.Provides.Tooling
+					answers.Stack.DependencyManagement = s.Provides.DependencyManagement
+					answers.Stack.BuildReleaseRun = s.Provides.BuildReleaseRun
+					color.Green("✓ Usando la pila de código '%s'.", s.Name)
+					break
 				}
 			}
 		}
 
-		if err := survey.Ask(deploymentQuestions, &answers.Deployment); err != nil {
+		// Ask about persistence
+		persistenceQuestion := &survey.Question{
+			Name: "type",
+			Prompt: &survey.Select{
+				Message: "¿Qué tipo de pila de persistencia usarás?",
+				Options: persistenceStacks,
+			},
+		}
+		if err := survey.Ask([]*survey.Question{persistenceQuestion}, &answers.Persistence); err != nil {
 			handleSurveyError(err)
 		}
 
-		// 4. Generate recipe file
+		// Ask about deployment
+		deploymentQuestion := &survey.Question{
+			Name: "type",
+			Prompt: &survey.Select{
+				Message: "¿Qué tipo de pila de despliegue usarás?",
+				Options: deploymentStacks,
+			},
+		}
+		if err := survey.Ask([]*survey.Question{deploymentQuestion}, &answers.Deployment); err != nil {
+			handleSurveyError(err)
+		}
+
+		// 3. Generate recipe file
 		s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
 		s.Suffix = " Creando receta del proyecto (grei.yml)..."
 		s.Start()
@@ -146,7 +135,12 @@ de receta del proyecto.`,
 		s.Stop()
 		color.Green("✅ Receta del proyecto creada exitosamente en '%s'.", recipePath)
 
-		scaffoldTemplates(targetPath, &answers)
+		// 4. Scaffold initial templates
+		scaffolderService := scaffolder.NewService()
+		if err := scaffolderService.Scaffold(targetPath, &answers); err != nil {
+			color.Red("❌ Error durante el scaffolding: %v", err)
+			os.Exit(1)
+		}
 
 		fmt.Println("\n🚀 ¡Proyecto inicializado exitosamente!")
 	},
@@ -162,21 +156,28 @@ var baseStackQuestions = []*survey.Question{
 		Name:   "language",
 		Prompt: &survey.Select{Message: "¿Qué lenguaje principal usarás?", Options: []string{"Go", "TypeScript", "Python"}, Default: "Go"},
 	},
-}
-
-var deploymentQuestions = []*survey.Question{
 	{
-		Name:   "type",
-		Prompt: &survey.Select{Message: "¿Cuál es el tipo de despliegue?", Options: []string{"Kubernetes", "Serverless", "Docker Swarm", "Binario"}, Default: "Kubernetes"},
-	},
-	{
-		Name:   "provider",
-		Prompt: &survey.Select{Message: "¿Cuál es el proveedor de despliegue?", Options: []string{"GCP", "AWS", "Azure", "On-premise"}, Default: "GCP"},
+		Name:   "tooling",
+		Prompt: &survey.Input{Message: "¿Qué tooling principal (framework, etc.) usarás?"},
 	},
 }
 
-func scaffoldTemplates(path string, recipe *recipe.Recipe) {
-	fmt.Printf("\n[i] Scaffolding templates for a '%s' project...\n", recipe.Project.Type)
+func categorizeStacks() ([]string, []string, []string) {
+	codeStacks := []string{"Custom"}
+	persistenceStacks := []string{"Ninguna"}
+	deploymentStacks := []string{"Ninguno"}
+
+	for _, s := range stack.Registry {
+		switch s.Type {
+		case "code":
+			codeStacks = append(codeStacks, s.Name)
+		case "persistence":
+			persistenceStacks = append(persistenceStacks, s.Name)
+		case "deployment":
+			deploymentStacks = append(deploymentStacks, s.Name)
+		}
+	}
+	return codeStacks, persistenceStacks, deploymentStacks
 }
 
 var adjectives = []string{

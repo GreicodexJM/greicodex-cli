@@ -3,14 +3,19 @@ package cli
 import (
 	"fmt"
 	"grei-cli/internal/adapters/coverage"
+	"grei-cli/internal/adapters/linter"
 	"grei-cli/internal/adapters/scanner"
 	"grei-cli/internal/adapters/syschecker"
+	"grei-cli/internal/core/recipe"
 	"grei-cli/internal/core/verifier"
 	"grei-cli/internal/ports/inbound"
 	"grei-cli/internal/ports/outbound"
 	"os"
+	"path/filepath"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 var verifyCmd = &cobra.Command{
@@ -26,6 +31,20 @@ Helm y OpenTofu.`,
 			targetPath = args[0]
 		}
 
+		// 1. Read and parse the project's recipe file.
+		recipePath := filepath.Join(targetPath, "grei.yml")
+		recipeData, err := os.ReadFile(recipePath)
+		if err != nil {
+			color.Red("❌ Error: No se pudo leer el archivo 'grei.yml' en '%s'. Asegúrate de que el proyecto ha sido inicializado.", targetPath)
+			os.Exit(1)
+		}
+
+		var projRecipe recipe.Recipe
+		if err := yaml.Unmarshal(recipeData, &projRecipe); err != nil {
+			color.Red("❌ Error: No se pudo parsear el archivo 'grei.yml': %v", err)
+			os.Exit(1)
+		}
+
 		minCoverage, _ := cmd.Flags().GetInt("min-cov")
 		jsonOutput, _ := cmd.Flags().GetBool("json")
 
@@ -34,12 +53,14 @@ Helm y OpenTofu.`,
 		}
 		sysChecker := syschecker.New()
 		secretScanner := scanner.NewGitleaksScanner(sysChecker)
-		verifyService := verifier.NewService(coverageParsers, secretScanner)
+		linterDetector := linter.NewFsDetector()
+		verifyService := verifier.NewService(coverageParsers, secretScanner, linterDetector)
 
 		options := inbound.VerifyOptions{
 			Path:        targetPath,
 			MinCoverage: minCoverage,
 			JSONOutput:  jsonOutput,
+			Recipe:      &projRecipe,
 		}
 
 		if err := verifyService.VerifyProject(options); err != nil {

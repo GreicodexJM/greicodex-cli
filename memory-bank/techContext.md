@@ -1,51 +1,33 @@
 # 📘 Tech Context — GRX CLI
 
 ## 1. Core Technology Stack
-- **Language:** **Go (Golang)** was chosen for its performance, static typing, cross-compilation capabilities, and suitability for building single-binary command-line tools.
-- **CLI Framework:** **`Cobra`** will be used to create a robust and POSIX-compliant CLI interface with commands, subcommands, and flags.
-- **ANSI Output:** **`fatih/color`** will be used for lightweight, cross-platform colored output in the terminal to improve readability.
-- **Template Management:** Go's built-in **`go:embed`** feature will be used to embed all necessary templates directly into the binary, ensuring the tool is offline-friendly.
+- **Language:** **Go (Golang)**
+- **CLI Framework:** **`Cobra`**
+- **Template Management:** **`go:embed`**
 
 ## 2. Development and Build Setup
-- **Project Structure:** The project will follow the standard Go project layout to ensure consistency and maintainability.
-  ```
-  grei-cli/
-  ├── cmd/           # Main application entry points
-  │   └── grei/
-  │       └── main.go
-  ├── internal/      # Private application and library code
-  │   ├── core/      # Core domain logic (agnostic of frameworks)
-  │   │   ├── initializer/
-  │   │   └── verifier/
-  │   ├── adapters/  # Implementations of ports
-  │   │   ├── cli/
-  │   │   ├── filesystem/
-  │   │   └── reporter/
-  │   └── ports/     # Interfaces for core logic
-  │       ├── inbound/
-  │       └── outbound/
-  ├── templates/     # Embedded templates
-  └── pkg/           # Public library code (if any)
-  ```
-- **Dependency Management:** Go Modules (`go.mod` and `go.sum`) will be used for managing project dependencies.
-- **Distribution:** **`GoReleaser`** will automate the build and packaging process, creating distributables for multiple platforms, including:
-  - Single binaries for Linux, macOS, and Windows.
-  - `.deb` packages for Debian-based systems.
-  - A Homebrew tap for macOS users.
-  - `.tar.gz` archives.
+- **Project Structure:** Standard Go project layout.
+- **Dependency Management:** Go Modules.
+- **Distribution:** **`GoReleaser`**.
 
-## 3. Technical Constraints and Dependencies
-- **Go Version:** The project will target a recent, stable version of Go (e.g., 1.21 or later) to leverage modern language features.
-- **External Tools:**
-  - **`gitleaks`:** The `verify` command will attempt to use `gitleaks` if it is available in the system's `PATH`. If not, it will fall back to a built-in regex-based secret scanner.
-  - **Plugins:** The plugin system relies on executables named `grei-<plugin>` being present in the `PATH`.
-- **Coverage Parsing:** The CLI will need to parse various test coverage report formats. It will support:
-  - **JSON:** `coverage-summary.json` (from Jest).
-  - **XML:** Cobertura, JaCoCo, PHPUnit, and Pytest formats.
+## 3. The Internal Stack Registry
+The GRX CLI features a **compositional internal stack architecture**. All available technology stacks are defined and managed directly within the core CLI binary in a central registry.
+
+### Stack Definition
+Each built-in stack is defined as a `stack.Stack` struct in `internal/core/stack/registry.go`. This struct contains:
+- **Name:** A unique identifier for the stack (e.g., `symfony-lamp`).
+- **Description:** A user-facing description.
+- **Type:** The category of the stack (`code`, `persistence`, `deployment`).
+- **Provides:** A struct detailing the specific technologies (Language, Tooling, etc.) that this stack provides.
+
+### Extensibility Model
+To add a new technology stack to the CLI, a developer must:
+1.  Add a new `stack.Stack` definition to the `internal/core/stack/registry.go` file.
+2.  Implement the necessary logic for template scaffolding and verification for the new stack.
+3.  Submit a pull request to the core `grei-cli` repository.
+
+This model ensures that all available stacks are centrally managed, versioned, and vetted according to Greicodex standards, maintaining the goal of a consistent and high-quality single-binary solution.
 
 ## 4. Tool Usage Patterns
-- **Template Overrides:** While templates are embedded, the CLI will allow users to override them by placing custom versions in specific directories. The lookup order will be:
-  1. `.grei/templates/` (project-specific)
-  2. `~/.config/grei/templates/` (user-specific)
-  3. Embedded templates (default)
-- **Docker Compose Handling:** The CLI will respect the convention of using `docker-compose.yml` for base service definitions (QA/PROD) and `docker-compose.override.yml` for local development overrides. This separation ensures that local development configurations do not accidentally leak into production settings.
+- **Template Overrides:** The CLI supports overriding embedded templates via project-specific or user-specific directories.
+- **Docker Compose Handling:** The CLI respects the `docker-compose.yml` and `docker-compose.override.yml` convention.

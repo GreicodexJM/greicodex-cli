@@ -3,29 +3,34 @@
 ## 1. Current Status
 **Phase 1 - Core CLI (In Progress)**
 
-The plugin system is now fully functional and includes built-in support for common tech stacks. The `init` command can now offer Symfony/LAMP and MERN stacks out of the box, in addition to any external plugins the user has installed. The survey logic correctly de-duplicates project types from multiple plugins, and the generated `grei.yml` is now richly populated from the chosen plugin's manifest.
+Test coverage has been added to the project's `Makefile`, improving the project's own quality and standards.
 
 ### What Works
-- **Project Documentation:** The `memory-bank` is fully initialized and up-to-date.
-- **Plugin Discovery:**
-  - [x] A `PluginScanner` finds both built-in and external plugins.
+- **Project Documentation:** The `memory-bank` is fully up-to-date.
+- **Internal Stack Registry:**
+  - [x] A central registry defines all available stacks.
 - **`grei init` command:**
-  - [x] Dynamically builds the survey from all available plugins.
-  - [x] De-duplicates project types.
-  - [x] Fully populates the `grei.yml` recipe from the chosen plugin.
-  - [x] Includes a "Custom" fallback.
+  - [x] Implements a fully compositional survey.
+  - [x] Generates a rich `grei.yml` recipe file.
+  - [x] Scaffolds initial project templates.
+- **`grei verify` command:**
+  - [x] Reads the `grei.yml` file.
+  - [x] Performs recipe-aware checks for the linter, persistence, and deployment layers.
+- **Development Lifecycle:**
+    - [x] `Makefile` includes a `coverage` target to run tests and generate a coverage report.
 
 ### What's Left to Build (Phase 1)
-- **Create a Reference Plugin:**
-  - [ ] Build a simple `grei-mock-symfony` external plugin to test the system.
-- **`grei verify` command:**
-  - [ ] Read the `grei.yml` file to become context-aware.
-- **Template Scaffolding:**
-  - [ ] Implement logic for the core CLI to invoke a `scaffold` command on the chosen plugin.
+- **Expand `verify` Checks:**
+  - [ ] Add other recipe-aware checks.
+- **Expand Template Scaffolding:**
+  - [ ] Add more stack-specific templates.
+- **Add More Stacks:**
+    - [ ] Add a `persistence` stack for MySQL.
 
 ## 2. Known Issues
-- None at this time.
+- The `verify` command's recipe integration is currently basic and needs to be expanded with more checks.
+- Template scaffolding is not yet implemented for the new `deployment` stacks.
 
 ## 3. Evolution of Project Decisions
-- **Pivotal Change:** The CLI now supports a **hybrid plugin model**.
-  - **Reasoning:** Combining built-in plugins with an extensible external plugin system provides the best of both worlds: immediate utility and long-term flexibility.
+- **Pivotal Change:** Added **test coverage** to the project's own `Makefile`.
+  - **Reasoning:** This is a critical step in "dogfooding" the CLI and ensuring it adheres to the same high standards it will enforce on other projects.

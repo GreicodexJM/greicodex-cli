@@ -12,17 +12,37 @@ import (
 type service struct {
 	coverageParsers map[string]outbound.CoverageParser
 	secretScanner   outbound.SecretScanner
+	linterDetector  outbound.LinterDetector
 }
 
-func NewService(coverageParsers map[string]outbound.CoverageParser, secretScanner outbound.SecretScanner) inbound.ProjectVerifier {
+func NewService(
+	coverageParsers map[string]outbound.CoverageParser,
+	secretScanner outbound.SecretScanner,
+	linterDetector outbound.LinterDetector,
+) inbound.ProjectVerifier {
 	return &service{
 		coverageParsers: coverageParsers,
 		secretScanner:   secretScanner,
+		linterDetector:  linterDetector,
 	}
 }
 
 func (s *service) VerifyProject(options inbound.VerifyOptions) error {
 	fmt.Println("Running verifications...")
+
+	// Verify project against its recipe
+	if options.Recipe != nil {
+		fmt.Printf("  [i] Verifying project against recipe for '%s'...\n", options.Recipe.Project.Name)
+		if err := s.verifyLinter(options); err != nil {
+			return err
+		}
+		if err := s.verifyPersistence(options); err != nil {
+			return err
+		}
+		if err := s.verifyDeployment(options); err != nil {
+			return err
+		}
+	}
 
 	// Check coverage
 	coverage, err := s.findAndParseCoverage(options.Path)
@@ -44,7 +64,6 @@ func (s *service) VerifyProject(options inbound.VerifyOptions) error {
 	if err != nil {
 		if err == scanner.ErrGitleaksNotFound {
 			fmt.Println("  [!] gitleaks not found, skipping secret scan.")
-			// This is not a fatal error, so we continue.
 		} else {
 			return fmt.Errorf("secret scanning failed: %w", err)
 		}
@@ -82,6 +101,62 @@ func (s *service) VerifyProject(options inbound.VerifyOptions) error {
 		return fmt.Errorf("missing required files or directories")
 	}
 
+	return nil
+}
+
+func (s *service) verifyLinter(options inbound.VerifyOptions) error {
+	if options.Recipe.Stack.Linter == "" {
+		fmt.Println("  [i] No linter specified in recipe, skipping check.")
+		return nil
+	}
+
+	fmt.Printf("  [i] Verifying linter '%s'...\n", options.Recipe.Stack.Linter)
+	found, err := s.linterDetector.CheckConfig(options.Path, options.Recipe.Stack.Linter)
+	if err != nil {
+		return fmt.Errorf("could not check for linter config: %w", err)
+	}
+
+	if !found {
+		return fmt.Errorf("linter config for '%s' not found", options.Recipe.Stack.Linter)
+	}
+
+	fmt.Printf("  [✓] Linter config found for '%s'.\n", options.Recipe.Stack.Linter)
+	return nil
+}
+
+func (s *service) verifyPersistence(options inbound.VerifyOptions) error {
+	if options.Recipe.Persistence.Type == "" || options.Recipe.Persistence.Type == "Ninguna" {
+		fmt.Println("  [i] No persistence layer specified in recipe, skipping check.")
+		return nil
+	}
+
+	fmt.Printf("  [i] Verifying persistence layer '%s'...\n", options.Recipe.Persistence.Type)
+	// For now, we just check for a docker-compose.yml file.
+	// This could be expanded to check for specific migrations, etc.
+	composePath := filepath.Join(options.Path, "docker-compose.yml")
+	if _, err := os.Stat(composePath); os.IsNotExist(err) {
+		return fmt.Errorf("docker-compose.yml not found for persistence layer '%s'", options.Recipe.Persistence.Type)
+	}
+
+	fmt.Printf("  [✓] Found docker-compose.yml for '%s'.\n", options.Recipe.Persistence.Type)
+	return nil
+}
+
+func (s *service) verifyDeployment(options inbound.VerifyOptions) error {
+	if options.Recipe.Deployment.Type == "" || options.Recipe.Deployment.Type == "Ninguno" {
+		fmt.Println("  [i] No deployment layer specified in recipe, skipping check.")
+		return nil
+	}
+
+	fmt.Printf("  [i] Verifying deployment layer '%s'...\n", options.Recipe.Deployment.Type)
+	// For now, we just check for a deploy/ directory.
+	// This could be expanded to check for specific IaC files, etc.
+	deployPath := filepath.Join(options.Path, "deploy")
+	if _, err := os.Stat(deployPath); os.IsNotExist(err) {
+		return fmt.Errorf("deploy/ directory not found for deployment layer '%s'", options.Recipe.Deployment.Type)
+	}
+
+	fmt.Printf("  [✓] Found deploy/ directory for '%s'.\n", options.Recipe.Deployment.Type)
 	return nil
 }
 
