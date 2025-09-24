@@ -3,7 +3,6 @@ package verifier
 import (
 	"grei-cli/internal/core/recipe"
 	"grei-cli/internal/ports/inbound"
-	"grei-cli/internal/ports/outbound"
 	"os"
 	"path/filepath"
 	"testing"
@@ -55,13 +54,11 @@ func TestVerifyProject_Success(t *testing.T) {
 		}
 	}
 
-	coverageParsers := map[string]outbound.CoverageParser{
-		"coverage.out": &mockCoverageParser{},
-	}
+	coverageParser := &mockCoverageParser{}
 	secretScanner := &mockSecretScanner{}
 	linterDetector := &mockLinterDetector{}
 
-	service := NewService(coverageParsers, secretScanner, linterDetector)
+	service := NewService(coverageParser, secretScanner, linterDetector)
 
 	options := inbound.VerifyOptions{
 		Path:        tmpDir,

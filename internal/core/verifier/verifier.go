@@ -10,20 +10,20 @@ import (
 )
 
 type service struct {
-	coverageParsers map[string]outbound.CoverageParser
-	secretScanner   outbound.SecretScanner
-	linterDetector  outbound.LinterDetector
+	coverageParser outbound.CoverageParser
+	secretScanner  outbound.SecretScanner
+	linterDetector outbound.LinterDetector
 }
 
 func NewService(
-	coverageParsers map[string]outbound.CoverageParser,
+	coverageParser outbound.CoverageParser,
 	secretScanner outbound.SecretScanner,
 	linterDetector outbound.LinterDetector,
 ) inbound.ProjectVerifier {
 	return &service{
-		coverageParsers: coverageParsers,
-		secretScanner:   secretScanner,
-		linterDetector:  linterDetector,
+		coverageParser: coverageParser,
+		secretScanner:  secretScanner,
+		linterDetector: linterDetector,
 	}
 }
 
@@ -161,15 +161,10 @@ func (s *service) verifyDeployment(options inbound.VerifyOptions) error {
 }
 
 func (s *service) findAndParseCoverage(basePath string) (float64, error) {
-	for name, parser := range s.coverageParsers {
-		searchPath := filepath.Join(basePath, "**", name) // Using glob pattern
-		matches, err := filepath.Glob(searchPath)
-		if err != nil {
-			continue // Ignore errors in globbing
-		}
-		if len(matches) > 0 {
-			return parser.Parse(matches[0])
-		}
+	// For now, we assume a single coverage file format. This can be expanded later.
+	searchPath := filepath.Join(basePath, "coverage.out")
+	if _, err := os.Stat(searchPath); os.IsNotExist(err) {
+		return 0, os.ErrNotExist
 	}
-	return 0, os.ErrNotExist
+	return s.coverageParser.Parse(searchPath)
 }

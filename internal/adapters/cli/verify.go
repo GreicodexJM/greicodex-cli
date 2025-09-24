@@ -9,7 +9,6 @@ import (
 	"grei-cli/internal/core/recipe"
 	"grei-cli/internal/core/verifier"
 	"grei-cli/internal/ports/inbound"
-	"grei-cli/internal/ports/outbound"
 	"os"
 	"path/filepath"
 
@@ -48,13 +47,12 @@ Helm y OpenTofu.`,
 		minCoverage, _ := cmd.Flags().GetInt("min-cov")
 		jsonOutput, _ := cmd.Flags().GetBool("json")
 
-		coverageParsers := map[string]outbound.CoverageParser{
-			"coverage-summary.json": coverage.NewJestParser(),
-		}
+		// For now, we assume a single coverage parser. This can be expanded later.
+		coverageParser := coverage.NewJestParser()
 		sysChecker := syschecker.New()
 		secretScanner := scanner.NewGitleaksScanner(sysChecker)
 		linterDetector := linter.NewFsDetector()
-		verifyService := verifier.NewService(coverageParsers, secretScanner, linterDetector)
+		verifyService := verifier.NewService(coverageParser, secretScanner, linterDetector)
 
 		options := inbound.VerifyOptions{
 			Path:        targetPath,

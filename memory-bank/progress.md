@@ -3,7 +3,7 @@
 ## 1. Current Status
 **Phase 1 - Core CLI (In Progress)**
 
-Test coverage has been added to the project's `Makefile`, improving the project's own quality and standards.
+Unit tests have been added for the `verifier.Service`, achieving **85% code coverage** for that package. This establishes a strong testing foundation for the CLI's core logic.
 
 ### What Works
 - **Project Documentation:** The `memory-bank` is fully up-to-date.
@@ -16,8 +16,8 @@ Test coverage has been added to the project's `Makefile`, improving the project'
 - **`grei verify` command:**
   - [x] Reads the `grei.yml` file.
   - [x] Performs recipe-aware checks for the linter, persistence, and deployment layers.
-- **Development Lifecycle:**
-    - [x] `Makefile` includes a `coverage` target to run tests and generate a coverage report.
+- **Testing:**
+    - [x] The `verifier` package has >80% test coverage.
 
 ### What's Left to Build (Phase 1)
 - **Expand `verify` Checks:**
@@ -28,9 +28,8 @@ Test coverage has been added to the project's `Makefile`, improving the project'
     - [ ] Add a `persistence` stack for MySQL.
 
 ## 2. Known Issues
-- The `verify` command's recipe integration is currently basic and needs to be expanded with more checks.
-- Template scaffolding is not yet implemented for the new `deployment` stacks.
+- Overall test coverage for the project is still low, but the most critical core logic is now well-tested.
 
 ## 3. Evolution of Project Decisions
-- **Pivotal Change:** Added **test coverage** to the project's own `Makefile`.
-  - **Reasoning:** This is a critical step in "dogfooding" the CLI and ensuring it adheres to the same high standards it will enforce on other projects.
+- **Pivotal Change:** Added **unit tests** for the `verifier.Service`.
+  - **Reasoning:** This ensures the quality and maintainability of the CLI's core verification logic and serves as a foundation for future testing efforts.

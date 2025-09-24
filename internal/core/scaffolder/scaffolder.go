@@ -9,10 +9,11 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
-//go:embed templates
+//go:embed all:templates
 var templateFiles embed.FS
 
 type service struct{}
@@ -52,7 +53,8 @@ func (s *service) copyTemplates(sourceDir, targetDir string, recipe *recipe.Reci
 		}
 
 		// The path in the target directory.
-		targetPath := filepath.Join(targetDir, templatePath[len(sourceDir):])
+		relativePath := strings.TrimPrefix(templatePath, sourceDir)
+		targetPath := filepath.Join(targetDir, relativePath)
 
 		if d.IsDir() {
 			return os.MkdirAll(targetPath, 0755)
