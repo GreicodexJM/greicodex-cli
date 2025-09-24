@@ -1,6 +1,7 @@
 package initializer
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"grei-cli/internal/ports/outbound"
 	"grei-cli/internal/templates"
 	"path/filepath"
+	"text/template"
 	"time"
 
 	"github.com/Masterminds/semver"
@@ -45,7 +47,7 @@ func (s *service) InitializeProject(path string, gitInit bool) error {
 	}
 
 	if err := s.downloader.Download(context.Background(), templatesURL, templatesBranch, cacheDir); err != nil {
-		return err
+		fmt.Printf("warn: failed to download templates: %v. Using cached version if available.\n", err)
 	}
 
 	if err := s.checkVersion(cacheDir); err != nil {
@@ -72,11 +74,23 @@ func (s *service) InitializeProject(path string, gitInit bool) error {
 	}
 
 	for dest, tmpl := range filesToCreate {
-		content, err := templates.Process(tmpl, data)
+		templatePath := filepath.Join(cacheDir, "templates", tmpl)
+		content, err := s.fsRepo.ReadFile(templatePath)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read template file: %w", err)
 		}
-		err = s.fsRepo.CreateFile(filepath.Join(path, dest), content)
+
+		t, err := template.New(tmpl).Parse(string(content))
+		if err != nil {
+			return fmt.Errorf("failed to parse template: %w", err)
+		}
+
+		var processedContent bytes.Buffer
+		if err := t.Execute(&processedContent, data); err != nil {
+			return fmt.Errorf("failed to execute template: %w", err)
+		}
+
+		err = s.fsRepo.CreateFile(filepath.Join(path, dest), processedContent.Bytes())
 		if err != nil {
 			return err
 		}

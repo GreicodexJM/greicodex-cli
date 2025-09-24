@@ -34,6 +34,6 @@ The initialization process follows a clear, multi-phase approach:
 3.  **Assembly:** The user's selections are gathered, and the `Recipe Assembler` merges them into a single, comprehensive `grei.yml` file.
 
 ## 3. Key Technical Decisions
-- **Single Binary:** All stacks are defined directly within the Go binary. There is no external plugin system. This simplifies distribution and ensures that the tool's capabilities are always consistent and self-contained.
+- **Hybrid Template Model:** The CLI fetches templates from a remote Git repository to ensure they are always up-to-date. It also maintains a local cache of the templates, allowing for offline use. This hybrid approach combines the benefits of centralized template management with the resilience of an offline-first design.
 - **Composition over Inheritance:** This model allows users to compose their ideal project stack by mixing and matching best-of-breed internal stacks, rather than being locked into a single, monolithic stack.
 - **Extensibility through Contribution:** To add a new stack, a developer must add a new entry to the internal `stack.Registry` and submit a pull request. This ensures that all available stacks are centrally managed and vetted according to Greicodex standards.

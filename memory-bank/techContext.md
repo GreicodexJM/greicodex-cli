@@ -3,7 +3,7 @@
 ## 1. Core Technology Stack
 - **Language:** **Go (Golang)**
 - **CLI Framework:** **`Cobra`**
-- **Template Management:** **`go:embed`**
+- **Template Management:** **`go:embed`** for embedded templates and **`go-git`** for remote template fetching.
 
 ## 2. Development and Build Setup
 - **Project Structure:** Standard Go project layout.

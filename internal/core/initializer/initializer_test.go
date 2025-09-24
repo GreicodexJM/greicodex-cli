@@ -93,14 +93,16 @@ func TestInitializeProject_GetCacheDirError(t *testing.T) {
 }
 
 func TestInitializeProject_DownloadError(t *testing.T) {
-	fsRepo := &mockFSRepo{}
+	fsRepo := &mockFSRepo{
+		readFileContent: []byte(`{"minVersion": "0.1.0"}`),
+	}
 	gitRepo := &mockGitRepo{}
 	downloader := &mockDownloader{downloadErr: errors.New("download error")}
 	service := NewService(fsRepo, gitRepo, downloader)
 
 	err := service.InitializeProject("/tmp/test-project", true)
-	if err == nil {
-		t.Error("InitializeProject() should have returned an error, but it did not")
+	if err != nil {
+		t.Errorf("InitializeProject() returned an unexpected error: %v", err)
 	}
 }
 
