@@ -112,7 +112,6 @@ de receta del proyecto.`,
 						Prompt: &survey.Select{
 							Message: "¿Qué tipo de pila de código usarás?",
 							Options: codeStacks,
-							Default: "Custom",
 						},
 					},
 				}

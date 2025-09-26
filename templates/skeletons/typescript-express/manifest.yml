@@ -1,4 +1,4 @@
-name: typescript-express
+name: api-typescript-express
 description: Pila para crear una API en Typescript con Express.
 type: api
 provides:
@@ -30,4 +30,4 @@ options:
     message: "¿Qué proveedor de CI/CD quieres usar?"
     values:
       - "GitHub Actions"
-      - "GitLab CI"
+      - "Bitbucket Pipelines"

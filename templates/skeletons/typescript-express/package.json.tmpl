@@ -7,7 +7,7 @@
     "start": "node dist/main.js",
     "build": "tsc",
     "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
-    "lint": "{{ if eq .Stack.linter \"ESLint\" }}eslint .{{ else }}tslint --project .{{ end }}"
+    "lint": "{{ if eq .Stack.linter "ESLint" }}eslint .{{ else }}tslint --project .{{ end }}"
   },
   "dependencies": {
     "express": "^4.17.1"
