@@ -11,12 +11,36 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed all:templates
 var templateFiles embed.FS
 
+func GetTemplates() ([]fs.DirEntry, error) {
+	return templateFiles.ReadDir("templates")
+}
+
+func GetTemplateFile(path string) ([]byte, error) {
+	return templateFiles.ReadFile(path)
+}
+
 type service struct{}
+
+type Manifest struct {
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+	Type        string `yaml:"type"`
+	Provides    struct {
+		Language             string `yaml:"language"`
+		Tooling              string `yaml:"tooling"`
+		Runtime              string `yaml:"runtime"`
+		Persistence          string `yaml:"persistence"`
+		DependencyManagement string `yaml:"dependencyManagement"`
+		BuildReleaseRun      string `yaml:"buildReleaseRun"`
+	} `yaml:"provides"`
+}
 
 func NewService() inbound.ScaffolderService {
 	return &service{}
@@ -31,15 +55,39 @@ func (s *service) Scaffold(path string, recipe *recipe.Recipe) error {
 	}
 
 	// 2. Copy stack-specific templates
-	if recipe.Project.Type == "go-cli" {
-		if err := s.copyTemplates(filepath.Join("templates", "go-cli"), path, recipe); err != nil {
-			return err
-		}
+	templateDirs, err := fs.ReadDir(templateFiles, "templates")
+	if err != nil {
+		return err
 	}
 
-	if recipe.Persistence.Type == "postgresql" {
-		if err := s.copyTemplates(filepath.Join("templates", "postgresql"), path, recipe); err != nil {
-			return err
+	for _, dir := range templateDirs {
+		if !dir.IsDir() || dir.Name() == "generic" {
+			continue
+		}
+
+		manifestPath := filepath.Join("templates", dir.Name(), "manifest.yml")
+		manifestFile, err := templateFiles.ReadFile(manifestPath)
+		if err != nil {
+			fmt.Printf("warn: could not read manifest for template %s: %v\n", dir.Name(), err)
+			continue
+		}
+
+		var manifest Manifest
+		if err := yaml.Unmarshal(manifestFile, &manifest); err != nil {
+			fmt.Printf("warn: could not unmarshal manifest for template %s: %v\n", dir.Name(), err)
+			continue
+		}
+
+		if manifest.Provides.Language == recipe.Stack.Language && manifest.Provides.Tooling == recipe.Stack.Tooling {
+			if err := s.copyTemplates(filepath.Join("templates", dir.Name()), path, recipe); err != nil {
+				return err
+			}
+		}
+
+		if manifest.Provides.Persistence == recipe.Persistence.Type {
+			if err := s.copyTemplates(filepath.Join("templates", dir.Name()), path, recipe); err != nil {
+				return err
+			}
 		}
 	}
 

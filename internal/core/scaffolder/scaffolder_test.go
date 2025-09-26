@@ -26,7 +26,7 @@ func TestScaffold_GoCli(t *testing.T) {
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
 			Name: "TestCliProject",
-			Type: "go-cli",
+			Type: "cli",
 		},
 	}
 
@@ -201,7 +201,7 @@ func TestScaffold_GoCli_WriteError(t *testing.T) {
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
 			Name: "TestGoCliWriteErrorProject",
-			Type: "go-cli",
+			Type: "cli",
 		},
 	}
 

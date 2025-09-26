@@ -1,7 +1,7 @@
 project:
-    name: greicodex-cli
-    customer: Greicodex
-    type: go-cli
+  name: greicodex-cli
+  customer: Greicodex
+  type: golang-cli
 stack:
     language: Go
     tooling: Cobra

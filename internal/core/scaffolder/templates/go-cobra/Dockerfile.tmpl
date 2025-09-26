@@ -1,0 +1,36 @@
+# Build stage
+FROM golang:1.18-alpine AS build
+
+WORKDIR /app
+
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN go build -o /{{ .Project.Name }} ./cmd/app
+
+# Debug stage
+FROM golang:1.18-alpine AS debug
+
+WORKDIR /app
+
+COPY --from=build /{{ .Project.Name }} /{{ .Project.Name }}
+
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+
+EXPOSE 40000
+
+CMD ["dlv", "--listen=:40000", "--headless", "--api-version=2", "exec", "/{{ .Project.Name }}"]
+
+# Final stage
+FROM alpine:latest
+
+WORKDIR /
+
+COPY --from=build /{{ .Project.Name }} /{{ .Project.Name }}
+
+USER nonroot:nonroot
+
+ENTRYPOINT ["/{{ .Project.Name }}"]

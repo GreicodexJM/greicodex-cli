@@ -1,0 +1,15 @@
+run:
+  timeout: 5m
+  skip-dirs:
+    - vendor
+    - gen
+
+linters:
+  enable-all: true
+  disable:
+    - exhaustivestruct
+    - golint
+    - interfacer
+    - maligned
+    - scopelint
+    - a-few-more-to-disable

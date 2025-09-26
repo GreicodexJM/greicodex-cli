@@ -1,4 +1,4 @@
 project:
     name: my-project
     customer: Greicodex
-    type: go-cli
+    type: cli

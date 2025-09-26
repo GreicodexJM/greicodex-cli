@@ -1,0 +1,10 @@
+name: angular
+description: Pila tecnológica para aplicaciones web con Angular.
+type: code
+provides:
+  language: TypeScript
+  tooling: Angular
+  runtime: Node.js
+  persistence: Stateless
+  dependencyManagement: NPM
+  buildReleaseRun: npm build, npm start

@@ -8,7 +8,6 @@ import (
 	"grei-cli/internal/core/initializer"
 	"grei-cli/internal/core/recipe"
 	"grei-cli/internal/core/scaffolder"
-	"grei-cli/internal/core/stack"
 	"grei-cli/internal/ports/inbound"
 	"math/rand"
 	"os"
@@ -101,7 +100,7 @@ de receta del proyecto.`,
 						Prompt: &survey.Select{
 							Message: "¿Qué tipo de pila de código usarás?",
 							Options: codeStacks,
-							Default: "go-cli",
+							Default: "cli",
 						},
 					},
 				}
@@ -115,16 +114,7 @@ de receta del proyecto.`,
 						return fmt.Errorf("error durante la encuesta: %w", err)
 					}
 				} else {
-					for _, s := range stack.Registry {
-						if s.Name == answers.Project.Type {
-							answers.Stack.Language = s.Provides.Language
-							answers.Stack.Tooling = s.Provides.Tooling
-							answers.Stack.DependencyManagement = s.Provides.DependencyManagement
-							answers.Stack.BuildReleaseRun = s.Provides.BuildReleaseRun
-							color.Green("✓ Usando la pila de código '%s'.", s.Name)
-							break
-						}
-					}
+					// This part will be refactored to use the dynamic template discovery
 				}
 
 				persistenceQuestion := &survey.Question{
@@ -198,16 +188,37 @@ func CategorizeStacks() ([]string, []string, []string) {
 	persistenceStacks := []string{"Ninguna"}
 	deploymentStacks := []string{"Ninguno"}
 
-	for _, s := range stack.Registry {
-		switch s.Type {
+	templateDirs, err := scaffolder.GetTemplates()
+	if err != nil {
+		return codeStacks, persistenceStacks, deploymentStacks
+	}
+
+	for _, dir := range templateDirs {
+		if !dir.IsDir() || dir.Name() == "generic" {
+			continue
+		}
+
+		manifestPath := filepath.Join("templates", dir.Name(), "manifest.yml")
+		manifestFile, err := scaffolder.GetTemplateFile(manifestPath)
+		if err != nil {
+			continue
+		}
+
+		var manifest scaffolder.Manifest
+		if err := yaml.Unmarshal(manifestFile, &manifest); err != nil {
+			continue
+		}
+
+		switch manifest.Type {
 		case "code":
-			codeStacks = append(codeStacks, s.Name)
+			codeStacks = append(codeStacks, manifest.Name)
 		case "persistence":
-			persistenceStacks = append(persistenceStacks, s.Name)
+			persistenceStacks = append(persistenceStacks, manifest.Name)
 		case "deployment":
-			deploymentStacks = append(deploymentStacks, s.Name)
+			deploymentStacks = append(deploymentStacks, manifest.Name)
 		}
 	}
+
 	return codeStacks, persistenceStacks, deploymentStacks
 }
 

@@ -166,7 +166,7 @@ func createTestRecipe(t *testing.T, dir string) string {
 project:
   name: my-project
   customer: Greicodex
-  type: go-cli
+  type: cli
 `
 	recipePath := filepath.Join(dir, "recipe.yml")
 	err := os.WriteFile(recipePath, []byte(recipe), 0644)

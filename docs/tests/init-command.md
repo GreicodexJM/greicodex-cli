@@ -7,7 +7,7 @@
 **And** the GRX CLI version is compatible with the remote templates
 
 **When** the developer runs `grei init my-new-project`
-**And** follows the interactive prompts to select a "go-cli" stack
+**And** follows the interactive prompts to select a "cli" stack
 **And** selects "Ninguna" for persistence
 **And** selects "Ninguno" for deployment
 

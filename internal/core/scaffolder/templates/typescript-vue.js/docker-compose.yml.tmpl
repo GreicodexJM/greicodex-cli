@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      target: build
+    volumes:
+      - .:/app
+    working_dir: /app
+    ports:
+      - "8080:8080"
+
+  debug:
+    build:
+      context: .
+      target: build
+    ports:
+      - "9229:9229"
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["npm", "run", "serve", "--", "--host", "0.0.0.0"]

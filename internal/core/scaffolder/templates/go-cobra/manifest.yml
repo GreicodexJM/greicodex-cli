@@ -1,0 +1,10 @@
+name: golang-cli
+description: Pila tecnológica para herramientas CLI en Go con Cobra.
+type: code
+provides:
+  language: Go
+  tooling: Cobra
+  runtime: Binario
+  persistence: Filesystem
+  dependencyManagement: Go Modules
+  buildReleaseRun: go build, ./binary
