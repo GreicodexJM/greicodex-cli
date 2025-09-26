@@ -29,7 +29,7 @@ func init() {
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Hubo un error al ejecutar GRX CLI: '%s'", err)
+		fmt.Fprintf(os.Stderr, "Hubo un error al ejecutar GRX CLI: '%s'\n\n", err)
 		os.Exit(1)
 	}
 }

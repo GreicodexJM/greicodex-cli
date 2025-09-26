@@ -1,9 +1,9 @@
 package initializer
 
 import (
-	"context"
 	"errors"
 	"grei-cli/internal/ports/outbound"
+	"os"
 	"testing"
 )
 
@@ -33,19 +33,14 @@ func (m *mockFSRepo) ReadFile(path string) ([]byte, error) {
 	return m.readFileContent, m.readFileErr
 }
 
+func (m *mockFSRepo) ReadDir(path string) ([]os.DirEntry, error) {
+	return nil, nil
+}
+
 type mockGitRepo struct {
 	outbound.GitRepository
 	initErr         error
 	createBranchErr error
-}
-
-type mockDownloader struct {
-	outbound.Downloader
-	downloadErr error
-}
-
-func (m *mockDownloader) Download(ctx context.Context, url, branch, cacheDir string) error {
-	return m.downloadErr
 }
 
 func (m *mockGitRepo) Init(path string) error {
@@ -59,8 +54,7 @@ func (m *mockGitRepo) CreateBranch(path, branchName string) error {
 func TestNewService(t *testing.T) {
 	fsRepo := &mockFSRepo{}
 	gitRepo := &mockGitRepo{}
-	downloader := &mockDownloader{}
-	service := NewService(fsRepo, gitRepo, downloader)
+	service := NewService(fsRepo, gitRepo)
 	if service == nil {
 		t.Error("NewService() should not return nil")
 	}
@@ -71,10 +65,9 @@ func TestInitializeProject(t *testing.T) {
 		readFileContent: []byte(`{"minVersion": "0.1.0"}`),
 	}
 	gitRepo := &mockGitRepo{}
-	downloader := &mockDownloader{}
-	service := NewService(fsRepo, gitRepo, downloader)
+	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
 	if err != nil {
 		t.Errorf("InitializeProject() returned an unexpected error: %v", err)
 	}
@@ -83,10 +76,9 @@ func TestInitializeProject(t *testing.T) {
 func TestInitializeProject_GetCacheDirError(t *testing.T) {
 	fsRepo := &mockFSRepo{cacheDirErr: errors.New("cache dir error")}
 	gitRepo := &mockGitRepo{}
-	downloader := &mockDownloader{}
-	service := NewService(fsRepo, gitRepo, downloader)
+	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
 	if err == nil {
 		t.Error("InitializeProject() should have returned an error, but it did not")
 	}
@@ -97,10 +89,9 @@ func TestInitializeProject_DownloadError(t *testing.T) {
 		readFileContent: []byte(`{"minVersion": "0.1.0"}`),
 	}
 	gitRepo := &mockGitRepo{}
-	downloader := &mockDownloader{downloadErr: errors.New("download error")}
-	service := NewService(fsRepo, gitRepo, downloader)
+	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
 	if err != nil {
 		t.Errorf("InitializeProject() returned an unexpected error: %v", err)
 	}
@@ -109,10 +100,9 @@ func TestInitializeProject_DownloadError(t *testing.T) {
 func TestInitializeProject_CreateDirError(t *testing.T) {
 	fsRepo := &mockFSRepo{createDirErr: errors.New("create dir error")}
 	gitRepo := &mockGitRepo{}
-	downloader := &mockDownloader{}
-	service := NewService(fsRepo, gitRepo, downloader)
+	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
 	if err == nil {
 		t.Error("InitializeProject() should have returned an error, but it did not")
 	}
@@ -121,10 +111,9 @@ func TestInitializeProject_CreateDirError(t *testing.T) {
 func TestInitializeProject_CreateFileError(t *testing.T) {
 	fsRepo := &mockFSRepo{createFileErr: errors.New("create file error")}
 	gitRepo := &mockGitRepo{}
-	downloader := &mockDownloader{}
-	service := NewService(fsRepo, gitRepo, downloader)
+	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
 	if err == nil {
 		t.Error("InitializeProject() should have returned an error, but it did not")
 	}
@@ -133,10 +122,9 @@ func TestInitializeProject_CreateFileError(t *testing.T) {
 func TestInitializeProject_GitInitError(t *testing.T) {
 	fsRepo := &mockFSRepo{}
 	gitRepo := &mockGitRepo{initErr: errors.New("git init error")}
-	downloader := &mockDownloader{}
-	service := NewService(fsRepo, gitRepo, downloader)
+	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
 	if err == nil {
 		t.Error("InitializeProject() should have returned an error, but it did not")
 	}
@@ -145,10 +133,9 @@ func TestInitializeProject_GitInitError(t *testing.T) {
 func TestInitializeProject_CreateBranchError(t *testing.T) {
 	fsRepo := &mockFSRepo{}
 	gitRepo := &mockGitRepo{createBranchErr: errors.New("create branch error")}
-	downloader := &mockDownloader{}
-	service := NewService(fsRepo, gitRepo, downloader)
+	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
 	if err == nil {
 		t.Error("InitializeProject() should have returned an error, but it did not")
 	}
@@ -159,10 +146,9 @@ func TestInitializeProject_NoGitInit(t *testing.T) {
 		readFileContent: []byte(`{"minVersion": "0.1.0"}`),
 	}
 	gitRepo := &mockGitRepo{}
-	downloader := &mockDownloader{}
-	service := NewService(fsRepo, gitRepo, downloader)
+	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", false)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", false)
 	if err != nil {
 		t.Errorf("InitializeProject() returned an unexpected error: %v", err)
 	}

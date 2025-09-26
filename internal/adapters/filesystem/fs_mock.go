@@ -43,6 +43,10 @@ func (m *MockRepository) ReadFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
+func (m *MockRepository) ReadDir(path string) ([]os.DirEntry, error) {
+	return os.ReadDir(path)
+}
+
 func (m *MockRepository) TempDir() string {
 	return m.tempDir
 }

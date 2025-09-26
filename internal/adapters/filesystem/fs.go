@@ -34,3 +34,7 @@ func (r *repository) GetCacheDir(path string) (string, error) {
 func (r *repository) ReadFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
+
+func (r *repository) ReadDir(path string) ([]os.DirEntry, error) {
+	return os.ReadDir(path)
+}

@@ -30,8 +30,7 @@ var (
 func AddInitCommand(root *cobra.Command) {
 	fsRepo := filesystem.NewRepository()
 	gitRepo := git.NewRepository()
-	downloader := downloader.NewGitDownloader()
-	initializerService := initializer.NewService(fsRepo, gitRepo, downloader)
+	initializerService := initializer.NewService(fsRepo, gitRepo)
 	scaffolderService := scaffolder.NewService(fsRepo)
 
 	cmd := NewInitCommand(initializerService, scaffolderService)
@@ -51,6 +50,17 @@ a través de una serie de preguntas para configurar el 'grei.yml', el archivo
 de receta del proyecto.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				return fmt.Errorf("error getting user home directory: %w", err)
+			}
+			cacheDir := filepath.Join(homeDir, ".grei", "templates")
+
+			downloader := downloader.NewGitDownloader()
+			if err := downloader.Download(cmd.Context(), "https://github.com/GreicodexJM/greicodex-cli.git", "master", cacheDir); err != nil {
+				color.Yellow("Could not download remote templates: %v", err)
+			}
+
 			targetPath := "."
 			if len(args) > 0 {
 				targetPath = args[0]
@@ -82,7 +92,7 @@ de receta del proyecto.`,
 				fmt.Println("🚀 ¡Bienvenido al inicializador de proyectos de Greicodex!")
 				fmt.Println("---------------------------------------------------------")
 
-				codeStacks, persistenceStacks, deploymentStacks := CategorizeStacks()
+				codeStacks, persistenceStacks, deploymentStacks := CategorizeStacks(cacheDir)
 
 				projectQuestions := []*survey.Question{
 					{
@@ -158,7 +168,7 @@ de receta del proyecto.`,
 			s.Stop()
 			color.Green("✅ Receta del proyecto creada exitosamente en '%s'.", recipePath)
 
-			if err := initializerService.InitializeProject(targetPath, true); err != nil {
+			if err := initializerService.InitializeProject(targetPath, cacheDir, true); err != nil {
 				return fmt.Errorf("error durante la inicialización: %w", err)
 			}
 
@@ -183,15 +193,12 @@ var baseStackQuestions = []*survey.Question{
 	},
 }
 
-func CategorizeStacks() ([]string, []string, []string) {
+func CategorizeStacks(cacheDir string) ([]string, []string, []string) {
 	codeStacks := []string{"Custom"}
 	persistenceStacks := []string{"Ninguna"}
 	deploymentStacks := []string{"Ninguno"}
 
-	fsRepo := filesystem.NewRepository()
-	scaffolderService := scaffolder.NewService(fsRepo)
-
-	templateDirs, err := scaffolderService.GetTemplates()
+	templateDirs, err := os.ReadDir(filepath.Join(cacheDir, "templates"))
 	if err != nil {
 		return codeStacks, persistenceStacks, deploymentStacks
 	}
@@ -201,8 +208,8 @@ func CategorizeStacks() ([]string, []string, []string) {
 			continue
 		}
 
-		manifestPath := filepath.Join("templates", dir.Name(), "manifest.yml")
-		manifestFile, err := scaffolderService.GetTemplateFile(manifestPath)
+		manifestPath := filepath.Join(cacheDir, "templates", dir.Name(), "manifest.yml")
+		manifestFile, err := os.ReadFile(manifestPath)
 		if err != nil {
 			continue
 		}

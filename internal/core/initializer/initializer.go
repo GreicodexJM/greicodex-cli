@@ -2,14 +2,13 @@ package initializer
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"grei-cli/internal/ports/inbound"
 	"grei-cli/internal/ports/outbound"
 	"grei-cli/internal/templates"
-	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
@@ -28,32 +27,20 @@ type Manifest struct {
 }
 
 type service struct {
-	fsRepo     outbound.FSRepository
-	gitRepo    outbound.GitRepository
-	downloader outbound.Downloader
+	fsRepo  outbound.FSRepository
+	gitRepo outbound.GitRepository
 }
 
-func NewService(fsRepo outbound.FSRepository, gitRepo outbound.GitRepository, downloader outbound.Downloader) inbound.InitializerService {
+func NewService(fsRepo outbound.FSRepository, gitRepo outbound.GitRepository) inbound.InitializerService {
 	return &service{
-		fsRepo:     fsRepo,
-		gitRepo:    gitRepo,
-		downloader: downloader,
+		fsRepo:  fsRepo,
+		gitRepo: gitRepo,
 	}
 }
 
-func (s *service) InitializeProject(path string, gitInit bool) error {
-	cacheDir, err := s.fsRepo.GetCacheDir(templatesDir)
-	if err != nil {
-		return err
-	}
-
-	if os.Getenv("GREI_E2E_TEST") == "" {
-		if err := s.downloader.Download(context.Background(), templatesURL, templatesBranch, cacheDir); err != nil {
-			fmt.Printf("warn: failed to download templates: %v. Using cached version if available.\n", err)
-		}
-	}
-
-	if err := s.checkVersion(cacheDir); err != nil {
+func (s *service) InitializeProject(path, cacheDir string, gitInit bool) error {
+	templatesCacheDir := filepath.Join(cacheDir, "templates")
+	if err := s.checkVersion(templatesCacheDir); err != nil {
 		return err
 	}
 
@@ -67,23 +54,24 @@ func (s *service) InitializeProject(path string, gitInit bool) error {
 		Year:        time.Now().Year(),
 	}
 
-	filesToCreate := map[string]string{
-		"README.md":          "README.md.tmpl",
-		".gitignore":         ".gitignore.tmpl",
-		".editorconfig":      ".editorconfig.tmpl",
-		"LICENSE":            "LICENSE.tmpl",
-		"CONTRIBUTING.md":    "CONTRIBUTING.md.tmpl",
-		"docker-compose.yml": "docker-compose.yml.tmpl",
+	genericSkeletonPath := filepath.Join(cacheDir, "templates", "skeletons", "generic")
+	files, err := s.fsRepo.ReadDir(genericSkeletonPath)
+	if err != nil {
+		return fmt.Errorf("failed to read generic skeleton directory: %w", err)
 	}
 
-	for dest, tmpl := range filesToCreate {
-		templatePath := filepath.Join(cacheDir, tmpl)
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		templatePath := filepath.Join(genericSkeletonPath, file.Name())
 		content, err := s.fsRepo.ReadFile(templatePath)
 		if err != nil {
 			return fmt.Errorf("failed to read template file: %w", err)
 		}
 
-		t, err := template.New(tmpl).Parse(string(content))
+		t, err := template.New(file.Name()).Parse(string(content))
 		if err != nil {
 			return fmt.Errorf("failed to parse template: %w", err)
 		}
@@ -93,7 +81,8 @@ func (s *service) InitializeProject(path string, gitInit bool) error {
 			return fmt.Errorf("failed to execute template: %w", err)
 		}
 
-		err = s.fsRepo.CreateFile(filepath.Join(path, dest), processedContent.Bytes())
+		destFileName := strings.TrimSuffix(file.Name(), ".tmpl")
+		err = s.fsRepo.CreateFile(filepath.Join(path, destFileName), processedContent.Bytes())
 		if err != nil {
 			return err
 		}

@@ -2,5 +2,5 @@ package inbound
 
 // InitializerService defines the port for the project initialization service.
 type InitializerService interface {
-	InitializeProject(path string, gitInit bool) error
+	InitializeProject(path, cacheDir string, gitInit bool) error
 }
