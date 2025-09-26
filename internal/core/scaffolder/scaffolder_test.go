@@ -14,22 +14,27 @@ func TestScaffold_GoCli(t *testing.T) {
 	fsMock := filesystem.NewMockRepository()
 	defer fsMock.Clean()
 
-	fsMock.AddManifest("code", "go-cli", "Go", "Cobra", "")
-	fsMock.AddTemplate("skeletons/generic/README.md", "README for {{ .Project.Name }}")
-	fsMock.AddTemplate("skeletons/generic/.gitignore", "*.log")
-	fsMock.AddTemplate("skeletons/go-cli/Makefile", "BINARY_NAME={{ .Project.Name }}")
-	fsMock.AddTemplate("skeletons/generic/manifest.json", `{"files": [{"path": "README.md", "strategy": "overwrite"}, {"path": ".gitignore", "strategy": "overwrite"}]}`)
-	fsMock.AddTemplate("skeletons/go-cli/manifest.json", `{"files": [{"path": "Makefile", "strategy": "overwrite"}]}`)
+	fsMock.AddManifest("go-cli", `
+name: go-cli
+type: code
+provides:
+  language: Go
+  tooling: Cobra
+`)
+	fsMock.AddTemplate("skeletons/generic/README.md.tmpl", "README for {{ .Project.Name }}")
+	fsMock.AddTemplate("skeletons/generic/.gitignore.tmpl", "*.log")
+	fsMock.AddTemplate("skeletons/go-cli/Makefile.tmpl", "BINARY_NAME={{ .Project.Name }}")
+	fsMock.AddManifest("generic", `
+name: generic
+type: generic
+`)
 
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
 			Name: "TestCliProject",
-			Type: "cli",
+			Type: "go-cli",
 		},
-		Stack: recipe.Stack{
-			Language: "Go",
-			Tooling:  "Cobra",
-		},
+		Stack: make(map[string]interface{}),
 	}
 
 	service := NewService(fsMock)
@@ -71,9 +76,14 @@ func TestScaffold_Postgresql(t *testing.T) {
 	fsMock := filesystem.NewMockRepository()
 	defer fsMock.Clean()
 
-	fsMock.AddManifest("persistence", "postgresql", "", "", "postgresql")
-	fsMock.AddTemplate("skeletons/generic/README.md", "README for {{ .Project.Name }}")
-	fsMock.AddTemplate("skeletons/postgresql/docker-compose.yml", `
+	fsMock.AddManifest("postgresql", `
+name: postgresql
+type: persistence
+provides:
+  persistence: postgresql
+`)
+	fsMock.AddTemplate("skeletons/generic/README.md.tmpl", "README for {{ .Project.Name }}")
+	fsMock.AddTemplate("skeletons/postgresql/docker-compose.yml.tmpl", `
 services:
   db:
     image: postgres
@@ -82,15 +92,18 @@ services:
       POSTGRES_USER: {{ .Project.Name | ToLower }}_user
       POSTGRES_PASSWORD: {{ .Project.Name | ToLower }}_password
 `)
-	fsMock.AddTemplate("skeletons/generic/manifest.json", `{"files": [{"path": "README.md", "strategy": "overwrite"}]}`)
-	fsMock.AddTemplate("skeletons/postgresql/manifest.json", `{"files": [{"path": "docker-compose.yml", "strategy": "merge-yaml"}]}`)
+	fsMock.AddManifest("generic", `
+name: generic
+type: generic
+`)
 
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
 			Name: "TestPostgresProject",
-		},
-		Persistence: recipe.Persistence{
 			Type: "postgresql",
+		},
+		Stack: map[string]interface{}{
+			"persistence": "postgresql",
 		},
 	}
 

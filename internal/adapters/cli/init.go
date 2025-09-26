@@ -94,7 +94,7 @@ de receta del proyecto.`,
 				fmt.Println("🚀 ¡Bienvenido al inicializador de proyectos de Greicodex!")
 				fmt.Println("---------------------------------------------------------")
 
-				codeStacks, persistenceStacks, deploymentStacks := CategorizeStacks(cacheDir)
+				codeStacks, _, _ := CategorizeStacks(cacheDir)
 
 				projectQuestions := []*survey.Question{
 					{
@@ -121,34 +121,29 @@ de receta del proyecto.`,
 					return fmt.Errorf("error durante la encuesta: %w", err)
 				}
 
-				if answers.Project.Type == "Custom" {
-					if err := survey.Ask(baseStackQuestions, &answers.Stack); err != nil {
-						return fmt.Errorf("error durante la encuesta: %w", err)
+				answers.Stack = make(map[string]interface{})
+				for _, stack := range codeStacks {
+					if stack == answers.Project.Type {
+						manifest, err := GetManifest(cacheDir, stack)
+						if err != nil {
+							return err
+						}
+
+						for key, value := range manifest.Options {
+							question := &survey.Question{
+								Name: key,
+								Prompt: &survey.Select{
+									Message: value.Message,
+									Options: value.Values,
+								},
+							}
+							var option string
+							if err := survey.Ask([]*survey.Question{question}, &option); err != nil {
+								return fmt.Errorf("error durante la encuesta: %w", err)
+							}
+							answers.Stack[key] = option
+						}
 					}
-				} else {
-					// This part will be refactored to use the dynamic template discovery
-				}
-
-				persistenceQuestion := &survey.Question{
-					Name: "type",
-					Prompt: &survey.Select{
-						Message: "¿Qué tipo de pila de persistencia usarás?",
-						Options: persistenceStacks,
-					},
-				}
-				if err := survey.Ask([]*survey.Question{persistenceQuestion}, &answers.Persistence); err != nil {
-					return fmt.Errorf("error durante la encuesta: %w", err)
-				}
-
-				deploymentQuestion := &survey.Question{
-					Name: "type",
-					Prompt: &survey.Select{
-						Message: "¿Qué tipo de pila de despliegue usarás?",
-						Options: deploymentStacks,
-					},
-				}
-				if err := survey.Ask([]*survey.Question{deploymentQuestion}, &answers.Deployment); err != nil {
-					return fmt.Errorf("error durante la encuesta: %w", err)
 				}
 			}
 
@@ -184,58 +179,45 @@ de receta del proyecto.`,
 	}
 }
 
-var baseStackQuestions = []*survey.Question{
-	{
-		Name:   "language",
-		Prompt: &survey.Select{Message: "¿Qué lenguaje principal usarás?", Options: []string{"Go", "TypeScript", "Python"}, Default: "Go"},
-	},
-	{
-		Name:   "tooling",
-		Prompt: &survey.Input{Message: "¿Qué tooling principal (framework, etc.) usarás?"},
-	},
-}
-
 func CategorizeStacks(cacheDir string) ([]string, []string, []string) {
-	codeStacks := []string{"Custom"}
-	persistenceStacks := []string{"Ninguna"}
-	deploymentStacks := []string{"Ninguno"}
+	var codeStacks []string
 
 	templateDirs, err := os.ReadDir(filepath.Join(cacheDir, "templates", "skeletons"))
 	if err != nil {
 		color.Red("Plantillas no encontradas! %v", err)
-		return codeStacks, persistenceStacks, deploymentStacks
+		return nil, nil, nil
 	}
 
 	for _, dir := range templateDirs {
-		color.Yellow("Escaneando plantillas en: %v", dir)
 		if !dir.IsDir() || dir.Name() == "generic" {
-			color.Yellow("...skip")
 			continue
 		}
 
-		manifestPath := filepath.Join(cacheDir, "templates", "skeletons", dir.Name(), "manifest.yml")
-		manifestFile, err := os.ReadFile(manifestPath)
+		manifest, err := GetManifest(cacheDir, dir.Name())
 		if err != nil {
 			color.Yellow("...skip %v", err)
 			continue
 		}
 
-		var manifest scaffolder.Manifest
-		if err := yaml.Unmarshal(manifestFile, &manifest); err != nil {
-			continue
-		}
-		color.Yellow("%v", manifest)
-		switch manifest.Type {
-		case "code":
-			codeStacks = append(codeStacks, manifest.Name)
-		case "persistence":
-			persistenceStacks = append(persistenceStacks, manifest.Name)
-		case "deployment":
-			deploymentStacks = append(deploymentStacks, manifest.Name)
-		}
+		codeStacks = append(codeStacks, manifest.Name)
 	}
 
-	return codeStacks, persistenceStacks, deploymentStacks
+	return codeStacks, nil, nil
+}
+
+func GetManifest(cacheDir, stackName string) (*scaffolder.Manifest, error) {
+	manifestPath := filepath.Join(cacheDir, "templates", "skeletons", stackName, "manifest.yml")
+	manifestFile, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var manifest scaffolder.Manifest
+	if err := yaml.Unmarshal(manifestFile, &manifest); err != nil {
+		return nil, err
+	}
+
+	return &manifest, nil
 }
 
 var adjectives = []string{

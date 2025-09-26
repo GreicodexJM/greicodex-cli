@@ -1,0 +1,13 @@
+{{ if eq .Stack.deployment "Lambda" }}
+service: {{ .Project.Name }}
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+
+functions:
+  api:
+    handler: dist/main.handler
+    events:
+      - httpApi: '*'
+{{ end }}

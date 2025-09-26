@@ -105,58 +105,61 @@ func (s *service) VerifyProject(options inbound.VerifyOptions) error {
 }
 
 func (s *service) verifyLinter(options inbound.VerifyOptions) error {
-	if options.Recipe.Stack.Linter == "" {
+	linter, ok := options.Recipe.Stack["linter"].(string)
+	if !ok || linter == "" {
 		fmt.Println("  [i] No linter specified in recipe, skipping check.")
 		return nil
 	}
 
-	fmt.Printf("  [i] Verifying linter '%s'...\n", options.Recipe.Stack.Linter)
-	found, err := s.linterDetector.CheckConfig(options.Path, options.Recipe.Stack.Linter)
+	fmt.Printf("  [i] Verifying linter '%s'...\n", linter)
+	found, err := s.linterDetector.CheckConfig(options.Path, linter)
 	if err != nil {
 		return fmt.Errorf("could not check for linter config: %w", err)
 	}
 
 	if !found {
-		return fmt.Errorf("linter config for '%s' not found", options.Recipe.Stack.Linter)
+		return fmt.Errorf("linter config for '%s' not found", linter)
 	}
 
-	fmt.Printf("  [✓] Linter config found for '%s'.\n", options.Recipe.Stack.Linter)
+	fmt.Printf("  [✓] Linter config found for '%s'.\n", linter)
 	return nil
 }
 
 func (s *service) verifyPersistence(options inbound.VerifyOptions) error {
-	if options.Recipe.Persistence.Type == "" || options.Recipe.Persistence.Type == "Ninguna" {
+	persistence, ok := options.Recipe.Stack["persistence"].(string)
+	if !ok || persistence == "" || persistence == "None" {
 		fmt.Println("  [i] No persistence layer specified in recipe, skipping check.")
 		return nil
 	}
 
-	fmt.Printf("  [i] Verifying persistence layer '%s'...\n", options.Recipe.Persistence.Type)
+	fmt.Printf("  [i] Verifying persistence layer '%s'...\n", persistence)
 	// For now, we just check for a docker-compose.yml file.
 	// This could be expanded to check for specific migrations, etc.
 	composePath := filepath.Join(options.Path, "docker-compose.yml")
 	if _, err := os.Stat(composePath); os.IsNotExist(err) {
-		return fmt.Errorf("docker-compose.yml not found for persistence layer '%s'", options.Recipe.Persistence.Type)
+		return fmt.Errorf("docker-compose.yml not found for persistence layer '%s'", persistence)
 	}
 
-	fmt.Printf("  [✓] Found docker-compose.yml for '%s'.\n", options.Recipe.Persistence.Type)
+	fmt.Printf("  [✓] Found docker-compose.yml for '%s'.\n", persistence)
 	return nil
 }
 
 func (s *service) verifyDeployment(options inbound.VerifyOptions) error {
-	if options.Recipe.Deployment.Type == "" || options.Recipe.Deployment.Type == "Ninguno" {
+	deployment, ok := options.Recipe.Stack["deployment"].(string)
+	if !ok || deployment == "" || deployment == "None" {
 		fmt.Println("  [i] No deployment layer specified in recipe, skipping check.")
 		return nil
 	}
 
-	fmt.Printf("  [i] Verifying deployment layer '%s'...\n", options.Recipe.Deployment.Type)
+	fmt.Printf("  [i] Verifying deployment layer '%s'...\n", deployment)
 	// For now, we just check for a deploy/ directory.
 	// This could be expanded to check for specific IaC files, etc.
 	deployPath := filepath.Join(options.Path, "deploy")
 	if _, err := os.Stat(deployPath); os.IsNotExist(err) {
-		return fmt.Errorf("deploy/ directory not found for deployment layer '%s'", options.Recipe.Deployment.Type)
+		return fmt.Errorf("deploy/ directory not found for deployment layer '%s'", deployment)
 	}
 
-	fmt.Printf("  [✓] Found deploy/ directory for '%s'.\n", options.Recipe.Deployment.Type)
+	fmt.Printf("  [✓] Found deploy/ directory for '%s'.\n", deployment)
 	return nil
 }
 

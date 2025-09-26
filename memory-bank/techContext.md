@@ -23,7 +23,7 @@ Each built-in stack is defined by a `manifest.yml` file within its skeleton dire
 ### Extensibility Model
 To add a new technology stack to the CLI, a developer must:
 1.  Create a new skeleton directory in `templates/skeletons`.
-2.  Add a `manifest.yml` file to the new directory, defining the stack's metadata.
+2.  Add a `manifest.yml` file to the new directory, defining the stack's metadata and options.
 3.  Add the template files (using the `.tmpl` extension for files that need processing) to the skeleton directory.
 4.  Submit a pull request to the core `grei-cli` repository.
 

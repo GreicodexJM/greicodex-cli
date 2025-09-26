@@ -69,10 +69,12 @@ func TestVerifyProject_Success(t *testing.T) {
 		Path:        tmpDir,
 		MinCoverage: 80,
 		Recipe: &recipe.Recipe{
-			Project:     recipe.Project{Name: "TestProject"},
-			Stack:       recipe.Stack{Linter: "golangci-lint"},
-			Persistence: recipe.Persistence{Type: "postgresql"},
-			Deployment:  recipe.Deployment{Type: "kubernetes"},
+			Project: recipe.Project{Name: "TestProject"},
+			Stack: map[string]interface{}{
+				"linter":      "golangci-lint",
+				"persistence": "postgresql",
+				"deployment":  "kubernetes",
+			},
 		},
 	}
 
@@ -121,7 +123,11 @@ func TestVerifyProject_MissingLinterConfig(t *testing.T) {
 	options := inbound.VerifyOptions{
 		Path:        tmpDir,
 		MinCoverage: 80,
-		Recipe:      &recipe.Recipe{Stack: recipe.Stack{Linter: "golangci-lint"}},
+		Recipe: &recipe.Recipe{
+			Stack: map[string]interface{}{
+				"linter": "golangci-lint",
+			},
+		},
 	}
 
 	// Act
@@ -144,7 +150,9 @@ func TestVerifyProject_MissingPersistence(t *testing.T) {
 		Path:        tmpDir,
 		MinCoverage: 80,
 		Recipe: &recipe.Recipe{
-			Persistence: recipe.Persistence{Type: "postgresql"},
+			Stack: map[string]interface{}{
+				"persistence": "postgresql",
+			},
 		},
 	}
 
@@ -168,7 +176,9 @@ func TestVerifyProject_MissingDeployment(t *testing.T) {
 		Path:        tmpDir,
 		MinCoverage: 80,
 		Recipe: &recipe.Recipe{
-			Deployment: recipe.Deployment{Type: "kubernetes"},
+			Stack: map[string]interface{}{
+				"deployment": "kubernetes",
+			},
 		},
 	}
 

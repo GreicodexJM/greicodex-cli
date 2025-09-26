@@ -35,6 +35,10 @@ type Manifest struct {
 		DependencyManagement string `yaml:"dependencyManagement"`
 		BuildReleaseRun      string `yaml:"buildReleaseRun"`
 	} `yaml:"provides"`
+	Options map[string]struct {
+		Message string   `yaml:"message"`
+		Values  []string `yaml:"values"`
+	} `yaml:"options"`
 }
 
 func NewService(fsRepo outbound.FSRepository) inbound.ScaffolderService {
@@ -88,11 +92,7 @@ func (s *service) Scaffold(path, cacheDir string, recipe *recipe.Recipe) error {
 			continue
 		}
 
-		if manifest.Provides.Language == recipe.Stack.Language && manifest.Provides.Tooling == recipe.Stack.Tooling {
-			skeletons = append(skeletons, filepath.Join(cacheDir, "templates", "skeletons", dir.Name()))
-		}
-
-		if manifest.Provides.Persistence == recipe.Persistence.Type {
+		if manifest.Name == recipe.Project.Type {
 			skeletons = append(skeletons, filepath.Join(cacheDir, "templates", "skeletons", dir.Name()))
 		}
 	}

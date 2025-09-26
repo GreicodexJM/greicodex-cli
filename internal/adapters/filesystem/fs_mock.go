@@ -1,10 +1,8 @@
 package filesystem
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 type MockRepository struct {
@@ -76,19 +74,7 @@ func (m *MockRepository) AddTemplate(path string, content string) {
 	}
 }
 
-func (m *MockRepository) AddManifest(templateType, name, language, tooling, persistence string) {
-	manifest := fmt.Sprintf(`
-name: %s
-description: A test template
-type: %s
-provides:
-  language: %s
-  tooling: %s
-  persistence: %s
-`, name, templateType, language, tooling, persistence)
-	path := filepath.Join(name, "manifest.yml")
-	if strings.Contains(name, "generic") {
-		path = "manifest.yml"
-	}
-	m.AddTemplate(path, manifest)
+func (m *MockRepository) AddManifest(name, content string) {
+	path := filepath.Join("skeletons", name, "manifest.yml")
+	m.AddTemplate(path, content)
 }
