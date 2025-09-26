@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"grei-cli/internal/core/recipe"
 	"grei-cli/internal/ports/inbound"
 	"grei-cli/internal/ports/outbound"
 	"grei-cli/internal/templates"
@@ -38,7 +39,7 @@ func NewService(fsRepo outbound.FSRepository, gitRepo outbound.GitRepository) in
 	}
 }
 
-func (s *service) InitializeProject(path, cacheDir string, gitInit bool) error {
+func (s *service) InitializeProject(path, cacheDir string, gitInit bool, recipe *recipe.Recipe) error {
 	templatesCacheDir := filepath.Join(cacheDir, "templates")
 	if err := s.checkVersion(templatesCacheDir); err != nil {
 		return err
@@ -48,10 +49,9 @@ func (s *service) InitializeProject(path, cacheDir string, gitInit bool) error {
 		return err
 	}
 
-	projectName := filepath.Base(path)
 	data := templates.Data{
-		ProjectName: projectName,
-		Year:        time.Now().Year(),
+		Recipe: *recipe,
+		Year:   time.Now().Year(),
 	}
 
 	genericSkeletonPath := filepath.Join(cacheDir, "templates", "skeletons", "generic")

@@ -2,6 +2,7 @@ package initializer
 
 import (
 	"errors"
+	"grei-cli/internal/core/recipe"
 	"grei-cli/internal/ports/outbound"
 	"os"
 	"testing"
@@ -67,7 +68,7 @@ func TestInitializeProject(t *testing.T) {
 	gitRepo := &mockGitRepo{}
 	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true, &recipe.Recipe{})
 	if err != nil {
 		t.Errorf("InitializeProject() returned an unexpected error: %v", err)
 	}
@@ -78,7 +79,7 @@ func TestInitializeProject_GetCacheDirError(t *testing.T) {
 	gitRepo := &mockGitRepo{}
 	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true, &recipe.Recipe{})
 	if err == nil {
 		t.Error("InitializeProject() should have returned an error, but it did not")
 	}
@@ -91,7 +92,7 @@ func TestInitializeProject_DownloadError(t *testing.T) {
 	gitRepo := &mockGitRepo{}
 	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true, &recipe.Recipe{})
 	if err != nil {
 		t.Errorf("InitializeProject() returned an unexpected error: %v", err)
 	}
@@ -102,7 +103,7 @@ func TestInitializeProject_CreateDirError(t *testing.T) {
 	gitRepo := &mockGitRepo{}
 	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true, &recipe.Recipe{})
 	if err == nil {
 		t.Error("InitializeProject() should have returned an error, but it did not")
 	}
@@ -113,7 +114,7 @@ func TestInitializeProject_CreateFileError(t *testing.T) {
 	gitRepo := &mockGitRepo{}
 	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true, &recipe.Recipe{})
 	if err == nil {
 		t.Error("InitializeProject() should have returned an error, but it did not")
 	}
@@ -124,7 +125,7 @@ func TestInitializeProject_GitInitError(t *testing.T) {
 	gitRepo := &mockGitRepo{initErr: errors.New("git init error")}
 	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true, &recipe.Recipe{})
 	if err == nil {
 		t.Error("InitializeProject() should have returned an error, but it did not")
 	}
@@ -135,7 +136,7 @@ func TestInitializeProject_CreateBranchError(t *testing.T) {
 	gitRepo := &mockGitRepo{createBranchErr: errors.New("create branch error")}
 	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", true, &recipe.Recipe{})
 	if err == nil {
 		t.Error("InitializeProject() should have returned an error, but it did not")
 	}
@@ -148,7 +149,7 @@ func TestInitializeProject_NoGitInit(t *testing.T) {
 	gitRepo := &mockGitRepo{}
 	service := NewService(fsRepo, gitRepo)
 
-	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", false)
+	err := service.InitializeProject("/tmp/test-project", "/tmp/cache", false, &recipe.Recipe{})
 	if err != nil {
 		t.Errorf("InitializeProject() returned an unexpected error: %v", err)
 	}

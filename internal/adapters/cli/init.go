@@ -54,9 +54,11 @@ de receta del proyecto.`,
 			if err != nil {
 				return fmt.Errorf("error getting user home directory: %w", err)
 			}
-			cacheDir := filepath.Join(homeDir, ".grei", "templates")
+			cacheDir := filepath.Join(homeDir, ".grei")
 
 			downloader := downloader.NewGitDownloader()
+
+			color.Blue("Downloading templates...")
 			if err := downloader.Download(cmd.Context(), "https://github.com/GreicodexJM/greicodex-cli.git", "master", cacheDir); err != nil {
 				color.Yellow("Could not download remote templates: %v", err)
 			}
@@ -110,7 +112,7 @@ de receta del proyecto.`,
 						Prompt: &survey.Select{
 							Message: "¿Qué tipo de pila de código usarás?",
 							Options: codeStacks,
-							Default: "cli",
+							Default: "Custom",
 						},
 					},
 				}
@@ -168,7 +170,7 @@ de receta del proyecto.`,
 			s.Stop()
 			color.Green("✅ Receta del proyecto creada exitosamente en '%s'.", recipePath)
 
-			if err := initializerService.InitializeProject(targetPath, cacheDir, true); err != nil {
+			if err := initializerService.InitializeProject(targetPath, cacheDir, true, &answers); err != nil {
 				return fmt.Errorf("error durante la inicialización: %w", err)
 			}
 
@@ -198,19 +200,23 @@ func CategorizeStacks(cacheDir string) ([]string, []string, []string) {
 	persistenceStacks := []string{"Ninguna"}
 	deploymentStacks := []string{"Ninguno"}
 
-	templateDirs, err := os.ReadDir(filepath.Join(cacheDir, "templates"))
+	templateDirs, err := os.ReadDir(filepath.Join(cacheDir, "templates", "skeletons"))
 	if err != nil {
+		color.Red("Plantillas no encontradas! %v", err)
 		return codeStacks, persistenceStacks, deploymentStacks
 	}
 
 	for _, dir := range templateDirs {
+		color.Yellow("Escaneando plantillas en: %v", dir)
 		if !dir.IsDir() || dir.Name() == "generic" {
+			color.Yellow("...skip")
 			continue
 		}
 
-		manifestPath := filepath.Join(cacheDir, "templates", dir.Name(), "manifest.yml")
+		manifestPath := filepath.Join(cacheDir, "templates", "skeletons", dir.Name(), "manifest.yml")
 		manifestFile, err := os.ReadFile(manifestPath)
 		if err != nil {
+			color.Yellow("...skip %v", err)
 			continue
 		}
 
@@ -218,7 +224,7 @@ func CategorizeStacks(cacheDir string) ([]string, []string, []string) {
 		if err := yaml.Unmarshal(manifestFile, &manifest); err != nil {
 			continue
 		}
-
+		color.Yellow("%v", manifest)
 		switch manifest.Type {
 		case "code":
 			codeStacks = append(codeStacks, manifest.Name)
@@ -256,5 +262,5 @@ func GenerateProjectName() string {
 	rand.Seed(time.Now().UnixNano())
 	adj := adjectives[rand.Intn(len(adjectives))]
 	con := constellations[rand.Intn(len(constellations))]
-	return fmt.Sprintf("%s%s", adj, con)
+	return fmt.Sprintf("%s-%s", con, adj)
 }

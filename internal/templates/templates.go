@@ -1,6 +1,8 @@
 package templates
 
+import "grei-cli/internal/core/recipe"
+
 type Data struct {
-	ProjectName string
-	Year        int
+	recipe.Recipe
+	Year int
 }
