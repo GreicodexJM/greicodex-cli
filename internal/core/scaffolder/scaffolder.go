@@ -69,32 +69,31 @@ func (s *service) Scaffold(path, cacheDir string, recipe *recipe.Recipe) error {
 	var skeletons []string
 	skeletons = append(skeletons, filepath.Join(cacheDir, "templates", "skeletons", "generic"))
 
-	templateDirs, err := s.fsRepo.ReadDir(filepath.Join(cacheDir, "templates", "skeletons"))
+	skeletonsRoot := filepath.Join(cacheDir, "templates", "skeletons")
+	err := filepath.Walk(skeletonsRoot, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() && info.Name() == "manifest.yml" {
+			manifestFile, err := s.fsRepo.ReadFile(path)
+			if err != nil {
+				return err
+			}
+
+			var manifest Manifest
+			if err := yaml.Unmarshal(manifestFile, &manifest); err != nil {
+				return err
+			}
+
+			if manifest.Name == recipe.Project.Type {
+				skeletons = append(skeletons, filepath.Dir(path))
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return err
-	}
-
-	for _, dir := range templateDirs {
-		if !dir.IsDir() || dir.Name() == "generic" {
-			continue
-		}
-
-		manifestPath := filepath.Join(cacheDir, "templates", "skeletons", dir.Name(), "manifest.yml")
-		manifestFile, err := s.fsRepo.ReadFile(manifestPath)
-		if err != nil {
-			fmt.Printf("warn: could not read manifest for template %s: %v\n", dir.Name(), err)
-			continue
-		}
-
-		var manifest Manifest
-		if err := yaml.Unmarshal(manifestFile, &manifest); err != nil {
-			fmt.Printf("warn: could not unmarshal manifest for template %s: %v\n", dir.Name(), err)
-			continue
-		}
-
-		if manifest.Name == recipe.Project.Type {
-			skeletons = append(skeletons, filepath.Join(cacheDir, "templates", "skeletons", dir.Name()))
-		}
 	}
 
 	for _, skeleton := range skeletons {
