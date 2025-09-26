@@ -1,8 +1,8 @@
 package scaffolder
 
 import (
+	"grei-cli/internal/adapters/filesystem"
 	"grei-cli/internal/core/recipe"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,37 +10,37 @@ import (
 )
 
 func TestScaffold_GoCli(t *testing.T) {
-	// Debugging: List all embedded files.
-	fs.WalkDir(templateFiles, ".", func(path string, d fs.DirEntry, err error) error {
-		t.Logf("Found embedded file: %s", path)
-		return nil
-	})
-
 	// Arrange
-	tmpDir, err := os.MkdirTemp("", "grei-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	fsMock := filesystem.NewMockRepository()
+	defer fsMock.Clean()
+
+	fsMock.AddManifest("code", "go-cli", "Go", "Cobra", "")
+	fsMock.AddTemplate("templates/generic/README.md.tmpl", "README for {{ .Project.Name }}")
+	fsMock.AddTemplate("templates/generic/.gitignore.tmpl", "*.log")
+	fsMock.AddTemplate("templates/go-cli/Makefile.tmpl", "BINARY_NAME={{ .Project.Name }}")
 
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
 			Name: "TestCliProject",
 			Type: "cli",
 		},
+		Stack: recipe.Stack{
+			Language: "Go",
+			Tooling:  "Cobra",
+		},
 	}
 
-	service := NewService()
+	service := NewService(fsMock)
+	tmpDir := fsMock.TempDir()
 
 	// Act
-	err = service.Scaffold(tmpDir, projRecipe)
+	err := service.Scaffold(tmpDir, projRecipe)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("Scaffold() returned an unexpected error: %v", err)
 	}
 
-	// Check that the expected files were created.
 	expectedFiles := []string{
 		"README.md",
 		".gitignore",
@@ -54,7 +54,6 @@ func TestScaffold_GoCli(t *testing.T) {
 		}
 	}
 
-	// Check that the Makefile content was correctly templated.
 	makefileContent, err := os.ReadFile(filepath.Join(tmpDir, "Makefile"))
 	if err != nil {
 		t.Fatalf("Failed to read Makefile: %v", err)
@@ -67,11 +66,20 @@ func TestScaffold_GoCli(t *testing.T) {
 
 func TestScaffold_Postgresql(t *testing.T) {
 	// Arrange
-	tmpDir, err := os.MkdirTemp("", "grei-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	fsMock := filesystem.NewMockRepository()
+	defer fsMock.Clean()
+
+	fsMock.AddManifest("persistence", "postgresql", "", "", "postgresql")
+	fsMock.AddTemplate("templates/generic/README.md.tmpl", "README for {{ .Project.Name }}")
+	fsMock.AddTemplate("templates/postgresql/docker-compose.yml.tmpl", `
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_DB: {{ .Project.Name | ToLower }}_db
+      POSTGRES_USER: {{ .Project.Name | ToLower }}_user
+      POSTGRES_PASSWORD: {{ .Project.Name | ToLower }}_password
+`)
 
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
@@ -82,23 +90,22 @@ func TestScaffold_Postgresql(t *testing.T) {
 		},
 	}
 
-	service := NewService()
+	service := NewService(fsMock)
+	tmpDir := fsMock.TempDir()
 
 	// Act
-	err = service.Scaffold(tmpDir, projRecipe)
+	err := service.Scaffold(tmpDir, projRecipe)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("Scaffold() returned an unexpected error: %v", err)
 	}
 
-	// Check that the docker-compose file was created.
 	path := filepath.Join(tmpDir, "docker-compose.yml")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		t.Errorf("Expected file to be created, but it was not: %s", path)
 	}
 
-	// Check that the content was correctly templated.
 	composeContent, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("Failed to read docker-compose.yml: %v", err)
@@ -117,11 +124,11 @@ func TestScaffold_Postgresql(t *testing.T) {
 
 func TestScaffold_Generic(t *testing.T) {
 	// Arrange
-	tmpDir, err := os.MkdirTemp("", "grei-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	fsMock := filesystem.NewMockRepository()
+	defer fsMock.Clean()
+
+	fsMock.AddTemplate("templates/generic/README.md.tmpl", "README for {{ .Project.Name }}")
+	fsMock.AddTemplate("templates/generic/.gitignore.tmpl", "*.log")
 
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
@@ -130,17 +137,17 @@ func TestScaffold_Generic(t *testing.T) {
 		},
 	}
 
-	service := NewService()
+	service := NewService(fsMock)
+	tmpDir := fsMock.TempDir()
 
 	// Act
-	err = service.Scaffold(tmpDir, projRecipe)
+	err := service.Scaffold(tmpDir, projRecipe)
 
 	// Assert
 	if err != nil {
 		t.Fatalf("Scaffold() returned an unexpected error: %v", err)
 	}
 
-	// Check that the expected files were created.
 	expectedFiles := []string{
 		"README.md",
 		".gitignore",
@@ -156,16 +163,10 @@ func TestScaffold_Generic(t *testing.T) {
 
 func TestScaffold_WriteError(t *testing.T) {
 	// Arrange
-	tmpDir, err := os.MkdirTemp("", "grei-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	fsMock := filesystem.NewMockRepository()
+	defer fsMock.Clean()
 
-	// Make the directory read-only to cause a write error.
-	if err := os.Chmod(tmpDir, 0555); err != nil {
-		t.Fatalf("Failed to change permissions of temp dir: %v", err)
-	}
+	fsMock.AddTemplate("templates/generic/README.md.tmpl", "README for {{ .Project.Name }}")
 
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
@@ -174,74 +175,16 @@ func TestScaffold_WriteError(t *testing.T) {
 		},
 	}
 
-	service := NewService()
-
-	// Act
-	err = service.Scaffold(tmpDir, projRecipe)
-
-	// Assert
-	if err == nil {
-		t.Errorf("Scaffold() should have returned an error, but it did not")
-	}
-}
-
-func TestScaffold_GoCli_WriteError(t *testing.T) {
-	// Arrange
-	tmpDir, err := os.MkdirTemp("", "grei-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	service := NewService(fsMock)
+	tmpDir := fsMock.TempDir()
 
 	// Make the directory read-only to cause a write error.
 	if err := os.Chmod(tmpDir, 0555); err != nil {
 		t.Fatalf("Failed to change permissions of temp dir: %v", err)
 	}
 
-	projRecipe := &recipe.Recipe{
-		Project: recipe.Project{
-			Name: "TestGoCliWriteErrorProject",
-			Type: "cli",
-		},
-	}
-
-	service := NewService()
-
 	// Act
-	err = service.Scaffold(tmpDir, projRecipe)
-
-	// Assert
-	if err == nil {
-		t.Errorf("Scaffold() should have returned an error, but it did not")
-	}
-}
-
-func TestScaffold_Postgresql_WriteError(t *testing.T) {
-	// Arrange
-	tmpDir, err := os.MkdirTemp("", "grei-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// Make the directory read-only to cause a write error.
-	if err := os.Chmod(tmpDir, 0555); err != nil {
-		t.Fatalf("Failed to change permissions of temp dir: %v", err)
-	}
-
-	projRecipe := &recipe.Recipe{
-		Project: recipe.Project{
-			Name: "TestPostgresqlWriteErrorProject",
-		},
-		Persistence: recipe.Persistence{
-			Type: "postgresql",
-		},
-	}
-
-	service := NewService()
-
-	// Act
-	err = service.Scaffold(tmpDir, projRecipe)
+	err := service.Scaffold(tmpDir, projRecipe)
 
 	// Assert
 	if err == nil {

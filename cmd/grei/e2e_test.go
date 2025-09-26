@@ -49,6 +49,15 @@ func TestE2EInitCommand(t *testing.T) {
 		assert.NoError(t, err)
 		defer os.RemoveAll(tempDir)
 
+		// Set the cache dir to the temp dir
+		os.Setenv("GREI_CACHE_DIR", tempDir)
+		defer os.Unsetenv("GREI_CACHE_DIR")
+		os.Setenv("GREI_E2E_TEST", "true")
+		defer os.Unsetenv("GREI_E2E_TEST")
+
+		// Create a dummy template
+		createDummyTemplates(t, tempDir)
+
 		recipePath := createTestRecipe(t, tempDir)
 
 		// Execute
@@ -93,6 +102,15 @@ func TestE2EVerifyCommand(t *testing.T) {
 		tempDir, err := os.MkdirTemp("", "grei-e2e-test")
 		assert.NoError(t, err)
 		defer os.RemoveAll(tempDir)
+
+		// Set the cache dir to the temp dir
+		os.Setenv("GREI_CACHE_DIR", tempDir)
+		defer os.Unsetenv("GREI_CACHE_DIR")
+		os.Setenv("GREI_E2E_TEST", "true")
+		defer os.Unsetenv("GREI_E2E_TEST")
+
+		// Create a dummy template
+		createDummyTemplates(t, tempDir)
 
 		// Initialize a project to verify
 		cmd := exec.Command(cliPath, "init", "my-project", "--no-interactive", "--recipe-file", createTestRecipe(t, tempDir))
@@ -172,4 +190,37 @@ project:
 	err := os.WriteFile(recipePath, []byte(recipe), 0644)
 	assert.NoError(t, err)
 	return recipePath
+}
+
+func createDummyTemplates(t *testing.T, dir string) {
+	templateDir := filepath.Join(dir, ".grei-cli", "templates", "templates")
+	err := os.MkdirAll(templateDir, 0755)
+	assert.NoError(t, err)
+
+	genericDir := filepath.Join(templateDir, "generic")
+	err = os.MkdirAll(genericDir, 0755)
+	assert.NoError(t, err)
+
+	filesToCreate := map[string]string{
+		".editorconfig.tmpl":      "",
+		".gitignore.tmpl":         "",
+		"CONTRIBUTING.md.tmpl":    "",
+		"docker-compose.yml.tmpl": "",
+		"LICENSE.tmpl":            "",
+		"README.md.tmpl":          "",
+	}
+
+	// Create files for initializer at root of templates
+	for name, content := range filesToCreate {
+		err := os.WriteFile(filepath.Join(templateDir, name), []byte(content), 0644)
+		assert.NoError(t, err)
+	}
+	err = os.WriteFile(filepath.Join(templateDir, "manifest.json"), []byte(`{"minVersion": "0.1.0"}`), 0644)
+	assert.NoError(t, err)
+
+	// Create files for scaffolder in generic dir
+	for name, content := range filesToCreate {
+		err := os.WriteFile(filepath.Join(genericDir, name), []byte(content), 0644)
+		assert.NoError(t, err)
+	}
 }

@@ -32,7 +32,7 @@ func AddInitCommand(root *cobra.Command) {
 	gitRepo := git.NewRepository()
 	downloader := downloader.NewGitDownloader()
 	initializerService := initializer.NewService(fsRepo, gitRepo, downloader)
-	scaffolderService := scaffolder.NewService()
+	scaffolderService := scaffolder.NewService(fsRepo)
 
 	cmd := NewInitCommand(initializerService, scaffolderService)
 	cmd.Flags().BoolVar(&noInteractive, "no-interactive", false, "Desactiva el modo interactivo y usa un archivo de receta")
@@ -188,7 +188,10 @@ func CategorizeStacks() ([]string, []string, []string) {
 	persistenceStacks := []string{"Ninguna"}
 	deploymentStacks := []string{"Ninguno"}
 
-	templateDirs, err := scaffolder.GetTemplates()
+	fsRepo := filesystem.NewRepository()
+	scaffolderService := scaffolder.NewService(fsRepo)
+
+	templateDirs, err := scaffolderService.GetTemplates()
 	if err != nil {
 		return codeStacks, persistenceStacks, deploymentStacks
 	}
@@ -199,7 +202,7 @@ func CategorizeStacks() ([]string, []string, []string) {
 		}
 
 		manifestPath := filepath.Join("templates", dir.Name(), "manifest.yml")
-		manifestFile, err := scaffolder.GetTemplateFile(manifestPath)
+		manifestFile, err := scaffolderService.GetTemplateFile(manifestPath)
 		if err != nil {
 			continue
 		}

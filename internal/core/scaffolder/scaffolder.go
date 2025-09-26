@@ -2,10 +2,10 @@ package scaffolder
 
 import (
 	"bytes"
-	"embed"
 	"fmt"
 	"grei-cli/internal/core/recipe"
 	"grei-cli/internal/ports/inbound"
+	"grei-cli/internal/ports/outbound"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -15,18 +15,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed all:templates
-var templateFiles embed.FS
+const (
+	templatesDir = ".grei-cli/templates"
+)
 
-func GetTemplates() ([]fs.DirEntry, error) {
-	return templateFiles.ReadDir("templates")
+type service struct {
+	fsRepo outbound.FSRepository
 }
-
-func GetTemplateFile(path string) ([]byte, error) {
-	return templateFiles.ReadFile(path)
-}
-
-type service struct{}
 
 type Manifest struct {
 	Name        string `yaml:"name"`
@@ -42,20 +37,44 @@ type Manifest struct {
 	} `yaml:"provides"`
 }
 
-func NewService() inbound.ScaffolderService {
-	return &service{}
+func NewService(fsRepo outbound.FSRepository) inbound.ScaffolderService {
+	return &service{
+		fsRepo: fsRepo,
+	}
+}
+
+func (s *service) GetTemplates() ([]fs.DirEntry, error) {
+	cacheDir, err := s.fsRepo.GetCacheDir(templatesDir)
+	if err != nil {
+		return nil, err
+	}
+	return os.ReadDir(filepath.Join(cacheDir, "templates"))
+}
+
+func (s *service) GetTemplateFile(path string) ([]byte, error) {
+	cacheDir, err := s.fsRepo.GetCacheDir(templatesDir)
+	if err != nil {
+		return nil, err
+	}
+	return s.fsRepo.ReadFile(filepath.Join(cacheDir, path))
 }
 
 func (s *service) Scaffold(path string, recipe *recipe.Recipe) error {
 	fmt.Printf("\n[i] Scaffolding templates for a '%s' project...\n", recipe.Project.Type)
 
+	cacheDir, err := s.fsRepo.GetCacheDir(templatesDir)
+	if err != nil {
+		return err
+	}
+	templatesPath := filepath.Join(cacheDir, "templates")
+
 	// 1. Copy generic templates
-	if err := s.copyTemplates(filepath.Join("templates", "generic"), path, recipe); err != nil {
+	if err := s.copyTemplates(filepath.Join(templatesPath, "generic"), path, recipe); err != nil {
 		return err
 	}
 
 	// 2. Copy stack-specific templates
-	templateDirs, err := fs.ReadDir(templateFiles, "templates")
+	templateDirs, err := os.ReadDir(templatesPath)
 	if err != nil {
 		return err
 	}
@@ -65,8 +84,8 @@ func (s *service) Scaffold(path string, recipe *recipe.Recipe) error {
 			continue
 		}
 
-		manifestPath := filepath.Join("templates", dir.Name(), "manifest.yml")
-		manifestFile, err := templateFiles.ReadFile(manifestPath)
+		manifestPath := filepath.Join(templatesPath, dir.Name(), "manifest.yml")
+		manifestFile, err := s.fsRepo.ReadFile(manifestPath)
 		if err != nil {
 			fmt.Printf("warn: could not read manifest for template %s: %v\n", dir.Name(), err)
 			continue
@@ -79,13 +98,13 @@ func (s *service) Scaffold(path string, recipe *recipe.Recipe) error {
 		}
 
 		if manifest.Provides.Language == recipe.Stack.Language && manifest.Provides.Tooling == recipe.Stack.Tooling {
-			if err := s.copyTemplates(filepath.Join("templates", dir.Name()), path, recipe); err != nil {
+			if err := s.copyTemplates(filepath.Join(templatesPath, dir.Name()), path, recipe); err != nil {
 				return err
 			}
 		}
 
 		if manifest.Provides.Persistence == recipe.Persistence.Type {
-			if err := s.copyTemplates(filepath.Join("templates", dir.Name()), path, recipe); err != nil {
+			if err := s.copyTemplates(filepath.Join(templatesPath, dir.Name()), path, recipe); err != nil {
 				return err
 			}
 		}
@@ -95,7 +114,7 @@ func (s *service) Scaffold(path string, recipe *recipe.Recipe) error {
 }
 
 func (s *service) copyTemplates(sourceDir, targetDir string, recipe *recipe.Recipe) error {
-	return fs.WalkDir(templateFiles, sourceDir, func(templatePath string, d fs.DirEntry, err error) error {
+	return filepath.Walk(sourceDir, func(templatePath string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -107,12 +126,12 @@ func (s *service) copyTemplates(sourceDir, targetDir string, recipe *recipe.Reci
 		}
 		targetPath := filepath.Join(targetDir, relativePath)
 
-		if d.IsDir() {
+		if info.IsDir() {
 			return os.MkdirAll(targetPath, 0755)
 		}
 
 		// Read the template file.
-		rawContent, err := templateFiles.ReadFile(templatePath)
+		rawContent, err := s.fsRepo.ReadFile(templatePath)
 		if err != nil {
 			return err
 		}
@@ -121,7 +140,7 @@ func (s *service) copyTemplates(sourceDir, targetDir string, recipe *recipe.Reci
 		funcMap := template.FuncMap{
 			"ToLower": strings.ToLower,
 		}
-		tmpl, err := template.New(d.Name()).Funcs(funcMap).Parse(string(rawContent))
+		tmpl, err := template.New(info.Name()).Funcs(funcMap).Parse(string(rawContent))
 		if err != nil {
 			return fmt.Errorf("could not parse template %s: %w", templatePath, err)
 		}
@@ -132,6 +151,6 @@ func (s *service) copyTemplates(sourceDir, targetDir string, recipe *recipe.Reci
 		}
 
 		// Write the file to the target directory.
-		return os.WriteFile(targetPath, processedContent.Bytes(), 0644)
+		return s.fsRepo.CreateFile(targetPath, processedContent.Bytes())
 	})
 }

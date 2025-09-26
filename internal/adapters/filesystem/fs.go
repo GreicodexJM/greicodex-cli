@@ -21,6 +21,9 @@ func (r *repository) CreateFile(path string, content []byte) error {
 }
 
 func (r *repository) GetCacheDir(path string) (string, error) {
+	if cacheDir := os.Getenv("GREI_CACHE_DIR"); cacheDir != "" {
+		return filepath.Join(cacheDir, path), nil
+	}
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
 		return "", err

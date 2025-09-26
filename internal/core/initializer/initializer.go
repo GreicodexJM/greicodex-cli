@@ -8,6 +8,7 @@ import (
 	"grei-cli/internal/ports/inbound"
 	"grei-cli/internal/ports/outbound"
 	"grei-cli/internal/templates"
+	"os"
 	"path/filepath"
 	"text/template"
 	"time"
@@ -46,8 +47,10 @@ func (s *service) InitializeProject(path string, gitInit bool) error {
 		return err
 	}
 
-	if err := s.downloader.Download(context.Background(), templatesURL, templatesBranch, cacheDir); err != nil {
-		fmt.Printf("warn: failed to download templates: %v. Using cached version if available.\n", err)
+	if os.Getenv("GREI_E2E_TEST") == "" {
+		if err := s.downloader.Download(context.Background(), templatesURL, templatesBranch, cacheDir); err != nil {
+			fmt.Printf("warn: failed to download templates: %v. Using cached version if available.\n", err)
+		}
 	}
 
 	if err := s.checkVersion(cacheDir); err != nil {
