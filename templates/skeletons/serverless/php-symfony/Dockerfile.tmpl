@@ -4,7 +4,9 @@ FROM composer:2 as composer_build
 WORKDIR /app
 
 COPY composer.json .
-RUN composer install --no-dev --no-scripts --no-autoloader
+RUN composer config --no-plugins allow-plugins.symfony/flex true \
+        && composer config --no-plugins allow-plugins.symfony/runtime true \
+        && composer install --no-dev --no-scripts --no-autoloader
 
 # Final stage
 FROM php:8.2-fpm-alpine

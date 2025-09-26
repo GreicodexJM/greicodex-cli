@@ -2,13 +2,21 @@ version: '3.8'
 
 services:
   php:
-    build:
-      context: .
-      dockerfile: Dockerfile.tmpl
+    image: bref/php-82-fpm-dev
     ports:
-      - "9000:9000"
+      - "8000:8000"
     volumes:
-      - .:/var/www/html
+      - .:/var/task
+    environment:
+      - BREF_AUTOLOAD_PATH=/var/task/vendor/autoload.php
+      - HANDLER=public/index.php
+      - APP_ENV=dev
+      - APP_DEBUG=1
+      {{ if eq .Stack.persistence "PostgreSQL" }}
+      - DATABASE_URL=postgresql://user:password@postgres:5432/{{ .Project.Name }}?serverVersion=13&charset=utf8
+      {{ else if eq .Stack.persistence "MySQL" }}
+      - DATABASE_URL=mysql://user:password@mysql:3306/{{ .Project.Name }}?serverVersion=8.0&charset=utf8mb4
+      {{ end }}
   {{ if eq .Stack.persistence "PostgreSQL" }}
   postgres:
     image: postgres:13-alpine

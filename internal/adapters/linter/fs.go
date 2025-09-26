@@ -13,6 +13,8 @@ var linterConfigFiles = map[string]string{
 	"ESLint":        ".eslintrc.js",
 	"Ruff":          "pyproject.toml",
 	"PHPStan":       "phpstan.neon",
+	"phpcs":         "phpcs.xml",
+	"Flake8":        "tox.ini",
 }
 
 type fsDetector struct{}
