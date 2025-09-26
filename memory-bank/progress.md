@@ -3,7 +3,7 @@
 ## 1. Current Status
 **Phase 1 - Core CLI (In Progress)**
 
-Unit tests have been added for the `scaffolder.Service`, achieving **77.4% code coverage** for that package. This expands our testing foundation to another critical piece of core logic.
+The scaffolding logic has been refactored to use Go's `text/template` engine. This change simplifies template creation and maintenance by allowing the use of placeholders and expressions, making the templates more dynamic and powerful.
 
 ### What Works
 - **Project Documentation:** The `memory-bank` is fully up-to-date.
@@ -12,7 +12,7 @@ Unit tests have been added for the `scaffolder.Service`, achieving **77.4% code 
 - **`grei init` command:**
   - [x] Implements a fully compositional survey.
   - [x] Generates a rich `grei.yml` recipe file.
-  - [x] Scaffolds initial project templates.
+  - [x] Scaffolds initial project templates using a template engine.
 - **`grei verify` command:**
   - [x] Reads the `grei.yml` file.
   - [x] Performs recipe-aware checks for the linter, persistence, and deployment layers.
@@ -32,5 +32,7 @@ Unit tests have been added for the `scaffolder.Service`, achieving **77.4% code 
 - Overall test coverage for the project is still low, but the most critical core logic is now well-tested.
 
 ## 3. Evolution of Project Decisions
+- **Pivotal Change:** Reverted the scaffolding logic to use Go's `text/template` engine.
+  - **Reasoning:** This simplifies template creation and maintenance, and makes the templates more powerful and flexible.
 - **Pivotal Change:** Added **unit tests** for the `scaffolder.Service`.
   - **Reasoning:** This ensures the quality and maintainability of the CLI's core scaffolding logic.

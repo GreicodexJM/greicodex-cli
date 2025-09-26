@@ -1,8 +1,3 @@
 name: generic
 description: Pila generica para todos los proyectos.
 type: generic
-files:
-  - path: README.md
-    strategy: overwrite
-  - path: .gitignore
-    strategy: overwrite

@@ -8,16 +8,3 @@ provides:
   persistence: Filesystem
   dependencyManagement: Go Modules
   buildReleaseRun: go build, ./binary
-files:
-  - path: Makefile.tmpl
-    strategy: overwrite
-  - path: go.mod.tmpl
-    strategy: overwrite
-  - path: .golangci.yml.tmpl
-    strategy: overwrite
-  - path: docker-compose.yml.tmpl
-    strategy: merge-yaml
-  - path: Dockerfile.tmpl
-    strategy: overwrite
-  - path: cmd/app/main.go.tmpl
-    strategy: overwrite
