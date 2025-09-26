@@ -121,28 +121,39 @@ de receta del proyecto.`,
 				}
 
 				answers.Stack = make(map[string]interface{})
-				for _, stack := range codeStacks {
-					if stack == answers.Project.Type {
-						manifest, err := GetManifest(cacheDir, stack)
+				skeletonsRoot := filepath.Join(cacheDir, "templates", "skeletons")
+				err = filepath.Walk(skeletonsRoot, func(path string, info os.FileInfo, err error) error {
+					if err != nil {
+						return err
+					}
+
+					if !info.IsDir() && info.Name() == "manifest.yml" {
+						manifest, err := GetManifest(path)
 						if err != nil {
 							return err
 						}
 
-						for key, value := range manifest.Options {
-							question := &survey.Question{
-								Name: key,
-								Prompt: &survey.Select{
-									Message: value.Message,
-									Options: value.Values,
-								},
+						if manifest.Name == answers.Project.Type {
+							for key, value := range manifest.Options {
+								question := &survey.Question{
+									Name: key,
+									Prompt: &survey.Select{
+										Message: value.Message,
+										Options: value.Values,
+									},
+								}
+								var option string
+								if err := survey.Ask([]*survey.Question{question}, &option); err != nil {
+									return fmt.Errorf("error durante la encuesta: %w", err)
+								}
+								answers.Stack[key] = option
 							}
-							var option string
-							if err := survey.Ask([]*survey.Question{question}, &option); err != nil {
-								return fmt.Errorf("error durante la encuesta: %w", err)
-							}
-							answers.Stack[key] = option
 						}
 					}
+					return nil
+				})
+				if err != nil {
+					return err
 				}
 			}
 
@@ -180,32 +191,33 @@ de receta del proyecto.`,
 
 func CategorizeStacks(cacheDir string) ([]string, []string, []string) {
 	var codeStacks []string
+	skeletonsRoot := filepath.Join(cacheDir, "templates", "skeletons")
 
-	templateDirs, err := os.ReadDir(filepath.Join(cacheDir, "templates", "skeletons"))
+	err := filepath.Walk(skeletonsRoot, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() && info.Name() == "manifest.yml" {
+			manifest, err := GetManifest(path)
+			if err != nil {
+				color.Yellow("...skip %v", err)
+				return nil
+			}
+			codeStacks = append(codeStacks, manifest.Name)
+		}
+		return nil
+	})
+
 	if err != nil {
 		color.Red("Plantillas no encontradas! %v", err)
 		return nil, nil, nil
 	}
 
-	for _, dir := range templateDirs {
-		if !dir.IsDir() || dir.Name() == "generic" {
-			continue
-		}
-
-		manifest, err := GetManifest(cacheDir, dir.Name())
-		if err != nil {
-			color.Yellow("...skip %v", err)
-			continue
-		}
-
-		codeStacks = append(codeStacks, manifest.Name)
-	}
-
 	return codeStacks, nil, nil
 }
 
-func GetManifest(cacheDir, stackName string) (*scaffolder.Manifest, error) {
-	manifestPath := filepath.Join(cacheDir, "templates", "skeletons", stackName, "manifest.yml")
+func GetManifest(manifestPath string) (*scaffolder.Manifest, error) {
 	manifestFile, err := os.ReadFile(manifestPath)
 	if err != nil {
 		return nil, err

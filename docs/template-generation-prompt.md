@@ -10,26 +10,34 @@ The Greicodex CLI is a command-line tool that automates the initialization and s
 
 ## Instructions
 
-1.  **Create the Template Directory**: Create a new directory for the template at `internal/core/scaffolder/templates/{language}-{tooling}-{...other-properties}`. For example, a template for a React project with an Express NodeJS backend and postgresql persistence would be located at `internal/core/scaffolder/templates/typescript-react-express-pgsql`.
+1.  **Create the Template Directory**: Create a new directory for the template at `templates/skeletons/{stack-name}`. For example, a template for a Typescript Express API would be located at `templates/skeletons/typescript-express`.
 
-2.  **Populate the Template Files**: Create the following files in the new template directory, using the provided content as a guide.
+2.  **Create a `manifest.yml` File**: Create a `manifest.yml` file in the root of the new template directory. This file should contain all the metadata for the stack, including its name, description, type, the technologies it provides, and the options that will be presented to the user in the TUI.
 
-    *   **`package.json.tmpl`**: Define the project's dependencies, including the core framework, TypeScript, ESLint, and Jest.
-    *   **`tsconfig.json.tmpl`**: Configure the TypeScript compiler options.
-    *   **`.eslintrc.js.tmpl`**: Define the ESLint rules for the project.
-    *   **`jest.config.js.tmpl`**: Configure the Jest testing framework.
-    *   **`Dockerfile.tmpl`**: Create a multistage Dockerfile that builds the application and serves it with Nginx. Include a debug stage with the appropriate tools (e.g., Delve for Go, Node Inspector for TypeScript).
-    *   **`docker-compose.yml.tmpl`**: Define the local development environment, including an `app` service for running the application and a `debug` service for debugging.
-    *   **`.vscode/launch.json.tmpl`**: Configure the debugger for Visual Studio Code.
-    *   **Hexagonal Architecture Directories**: Create the following directories and add a `.gitkeep` file to each:
-        *   `src/domain`
-        *   `src/ports/inbound`
-        *   `src/ports/outbound`
-        *   `src/adapters/inbound`
-        *   `src/adapters/outbound`
-    *   **Basic Application Structure**: Create the basic application structure, including a main entry point and a sample component.
+    ```yaml
+    name: typescript-express
+    description: Pila para crear una API en Typescript con Express.
+    type: api
+    provides:
+      language: Typescript
+      tooling: Express
+    options:
+      persistence:
+        message: "¿Qué tipo de persistencia usarás?"
+        values:
+          - "None"
+          - "PostgreSQL"
+          - "MySQL"
+      deployment:
+        message: "¿Dónde quieres desplegar la aplicación?"
+        values:
+          - "Kubernetes"
+          - "Lambda"
+    ```
 
-3.  **Create a `manifest.yml` File**: Create a `manifest.yml` file in the root of the new template directory. This file should contain all the metadata for the stack, including its name, description, type, and the technologies it provides.
+3.  **Populate the Template Files**: Create the template files in the new directory. Use the `.tmpl` extension for any file that needs to be processed by the template engine. You can use placeholders and expressions to make the templates dynamic.
+
+    For example, you can use `{{ .Project.Name }}` to insert the project name, and `{{ if eq .Stack.deployment "Kubernetes" }}` to conditionally include content based on the user's selections.
 
 ## Example
 
