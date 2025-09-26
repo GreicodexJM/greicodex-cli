@@ -1,7 +1,6 @@
 package scaffolder
 
 import (
-	"bytes"
 	"fmt"
 	"grei-cli/internal/core/recipe"
 	"grei-cli/internal/ports/inbound"
@@ -9,8 +8,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
-	"text/template"
 
 	"gopkg.in/yaml.v3"
 )
@@ -36,6 +33,7 @@ type Manifest struct {
 		DependencyManagement string `yaml:"dependencyManagement"`
 		BuildReleaseRun      string `yaml:"buildReleaseRun"`
 	} `yaml:"provides"`
+	Files []FileManifest `yaml:"files"`
 }
 
 func NewService(fsRepo outbound.FSRepository) inbound.ScaffolderService {
@@ -67,7 +65,7 @@ func (s *service) Scaffold(path, cacheDir string, recipe *recipe.Recipe) error {
 	var skeletons []string
 	skeletons = append(skeletons, filepath.Join(cacheDir, "templates", "skeletons", "generic"))
 
-	templateDirs, err := os.ReadDir(filepath.Join(cacheDir, "templates", "skeletons"))
+	templateDirs, err := s.fsRepo.ReadDir(filepath.Join(cacheDir, "templates", "skeletons"))
 	if err != nil {
 		return err
 	}
@@ -100,46 +98,4 @@ func (s *service) Scaffold(path, cacheDir string, recipe *recipe.Recipe) error {
 	}
 
 	return s.mergerService.Merge(skeletons, path)
-}
-
-func (s *service) copyTemplates(sourceDir, targetDir string, recipe *recipe.Recipe) error {
-	return filepath.Walk(sourceDir, func(templatePath string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// The path in the target directory.
-		relativePath := strings.TrimPrefix(templatePath, sourceDir)
-		if strings.HasSuffix(relativePath, ".tmpl") {
-			relativePath = strings.TrimSuffix(relativePath, ".tmpl")
-		}
-		targetPath := filepath.Join(targetDir, relativePath)
-
-		if info.IsDir() {
-			return os.MkdirAll(targetPath, 0755)
-		}
-
-		// Read the template file.
-		rawContent, err := s.fsRepo.ReadFile(templatePath)
-		if err != nil {
-			return err
-		}
-
-		// Execute the template to replace variables like {{ .Project.Name }}
-		funcMap := template.FuncMap{
-			"ToLower": strings.ToLower,
-		}
-		tmpl, err := template.New(info.Name()).Funcs(funcMap).Parse(string(rawContent))
-		if err != nil {
-			return fmt.Errorf("could not parse template %s: %w", templatePath, err)
-		}
-
-		var processedContent bytes.Buffer
-		if err := tmpl.Execute(&processedContent, recipe); err != nil {
-			return fmt.Errorf("could not execute template %s: %w", templatePath, err)
-		}
-
-		// Write the file to the target directory.
-		return s.fsRepo.CreateFile(targetPath, processedContent.Bytes())
-	})
 }
