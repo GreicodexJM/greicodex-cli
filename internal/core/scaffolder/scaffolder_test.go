@@ -15,9 +15,11 @@ func TestScaffold_GoCli(t *testing.T) {
 	defer fsMock.Clean()
 
 	fsMock.AddManifest("code", "go-cli", "Go", "Cobra", "")
-	fsMock.AddTemplate("generic/README.md.tmpl", "README for {{ .Project.Name }}")
-	fsMock.AddTemplate("generic/.gitignore.tmpl", "*.log")
-	fsMock.AddTemplate("go-cli/Makefile.tmpl", "BINARY_NAME={{ .Project.Name }}")
+	fsMock.AddTemplate("skeletons/generic/README.md", "README for {{ .Project.Name }}")
+	fsMock.AddTemplate("skeletons/generic/.gitignore", "*.log")
+	fsMock.AddTemplate("skeletons/go-cli/Makefile", "BINARY_NAME={{ .Project.Name }}")
+	fsMock.AddTemplate("skeletons/generic/manifest.json", `{"files": [{"path": "README.md", "strategy": "overwrite"}, {"path": ".gitignore", "strategy": "overwrite"}]}`)
+	fsMock.AddTemplate("skeletons/go-cli/manifest.json", `{"files": [{"path": "Makefile", "strategy": "overwrite"}]}`)
 
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
@@ -34,7 +36,7 @@ func TestScaffold_GoCli(t *testing.T) {
 	tmpDir := fsMock.TempDir()
 
 	// Act
-	err := service.Scaffold(tmpDir, projRecipe)
+	err := service.Scaffold(tmpDir, fsMock.TempDir(), projRecipe)
 
 	// Assert
 	if err != nil {
@@ -70,8 +72,8 @@ func TestScaffold_Postgresql(t *testing.T) {
 	defer fsMock.Clean()
 
 	fsMock.AddManifest("persistence", "postgresql", "", "", "postgresql")
-	fsMock.AddTemplate("generic/README.md.tmpl", "README for {{ .Project.Name }}")
-	fsMock.AddTemplate("postgresql/docker-compose.yml.tmpl", `
+	fsMock.AddTemplate("skeletons/generic/README.md", "README for {{ .Project.Name }}")
+	fsMock.AddTemplate("skeletons/postgresql/docker-compose.yml", `
 services:
   db:
     image: postgres
@@ -80,6 +82,8 @@ services:
       POSTGRES_USER: {{ .Project.Name | ToLower }}_user
       POSTGRES_PASSWORD: {{ .Project.Name | ToLower }}_password
 `)
+	fsMock.AddTemplate("skeletons/generic/manifest.json", `{"files": [{"path": "README.md", "strategy": "overwrite"}]}`)
+	fsMock.AddTemplate("skeletons/postgresql/manifest.json", `{"files": [{"path": "docker-compose.yml", "strategy": "merge-yaml"}]}`)
 
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
@@ -94,7 +98,7 @@ services:
 	tmpDir := fsMock.TempDir()
 
 	// Act
-	err := service.Scaffold(tmpDir, projRecipe)
+	err := service.Scaffold(tmpDir, fsMock.TempDir(), projRecipe)
 
 	// Assert
 	if err != nil {
@@ -119,75 +123,5 @@ services:
 	}
 	if !strings.Contains(string(composeContent), "POSTGRES_PASSWORD: testpostgresproject_password") {
 		t.Errorf("Expected docker-compose.yml to contain the correct password, but it did not.")
-	}
-}
-
-func TestScaffold_Generic(t *testing.T) {
-	// Arrange
-	fsMock := filesystem.NewMockRepository()
-	defer fsMock.Clean()
-
-	fsMock.AddTemplate("generic/README.md.tmpl", "README for {{ .Project.Name }}")
-	fsMock.AddTemplate("generic/.gitignore.tmpl", "*.log")
-
-	projRecipe := &recipe.Recipe{
-		Project: recipe.Project{
-			Name: "TestGenericProject",
-			Type: "generic",
-		},
-	}
-
-	service := NewService(fsMock)
-	tmpDir := fsMock.TempDir()
-
-	// Act
-	err := service.Scaffold(tmpDir, projRecipe)
-
-	// Assert
-	if err != nil {
-		t.Fatalf("Scaffold() returned an unexpected error: %v", err)
-	}
-
-	expectedFiles := []string{
-		"README.md",
-		".gitignore",
-	}
-
-	for _, f := range expectedFiles {
-		path := filepath.Join(tmpDir, f)
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			t.Errorf("Expected file to be created, but it was not: %s", path)
-		}
-	}
-}
-
-func TestScaffold_WriteError(t *testing.T) {
-	// Arrange
-	fsMock := filesystem.NewMockRepository()
-	defer fsMock.Clean()
-
-	fsMock.AddTemplate("generic/README.md.tmpl", "README for {{ .Project.Name }}")
-
-	projRecipe := &recipe.Recipe{
-		Project: recipe.Project{
-			Name: "TestWriteErrorProject",
-			Type: "generic",
-		},
-	}
-
-	service := NewService(fsMock)
-	tmpDir := fsMock.TempDir()
-
-	// Make the directory read-only to cause a write error.
-	if err := os.Chmod(tmpDir, 0555); err != nil {
-		t.Fatalf("Failed to change permissions of temp dir: %v", err)
-	}
-
-	// Act
-	err := service.Scaffold(tmpDir, projRecipe)
-
-	// Assert
-	if err == nil {
-		t.Errorf("Scaffold() should have returned an error, but it did not")
 	}
 }

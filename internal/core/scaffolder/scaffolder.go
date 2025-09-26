@@ -20,7 +20,8 @@ const (
 )
 
 type service struct {
-	fsRepo outbound.FSRepository
+	fsRepo        outbound.FSRepository
+	mergerService *MergerService
 }
 
 type Manifest struct {
@@ -39,7 +40,8 @@ type Manifest struct {
 
 func NewService(fsRepo outbound.FSRepository) inbound.ScaffolderService {
 	return &service{
-		fsRepo: fsRepo,
+		fsRepo:        fsRepo,
+		mergerService: NewMergerService(fsRepo),
 	}
 }
 
@@ -59,21 +61,13 @@ func (s *service) GetTemplateFile(path string) ([]byte, error) {
 	return s.fsRepo.ReadFile(filepath.Join(cacheDir, path))
 }
 
-func (s *service) Scaffold(path string, recipe *recipe.Recipe) error {
+func (s *service) Scaffold(path, cacheDir string, recipe *recipe.Recipe) error {
 	fmt.Printf("\n[i] Scaffolding templates for a '%s' project...\n", recipe.Project.Type)
 
-	cacheDir, err := s.fsRepo.GetCacheDir(templatesDir)
-	if err != nil {
-		return err
-	}
+	var skeletons []string
+	skeletons = append(skeletons, filepath.Join(cacheDir, "templates", "skeletons", "generic"))
 
-	// 1. Copy generic templates
-	if err := s.copyTemplates(filepath.Join(cacheDir, "generic"), path, recipe); err != nil {
-		return err
-	}
-
-	// 2. Copy stack-specific templates
-	templateDirs, err := os.ReadDir(cacheDir)
+	templateDirs, err := os.ReadDir(filepath.Join(cacheDir, "templates", "skeletons"))
 	if err != nil {
 		return err
 	}
@@ -83,7 +77,7 @@ func (s *service) Scaffold(path string, recipe *recipe.Recipe) error {
 			continue
 		}
 
-		manifestPath := filepath.Join(cacheDir, dir.Name(), "manifest.yml")
+		manifestPath := filepath.Join(cacheDir, "templates", "skeletons", dir.Name(), "manifest.yml")
 		manifestFile, err := s.fsRepo.ReadFile(manifestPath)
 		if err != nil {
 			fmt.Printf("warn: could not read manifest for template %s: %v\n", dir.Name(), err)
@@ -97,19 +91,15 @@ func (s *service) Scaffold(path string, recipe *recipe.Recipe) error {
 		}
 
 		if manifest.Provides.Language == recipe.Stack.Language && manifest.Provides.Tooling == recipe.Stack.Tooling {
-			if err := s.copyTemplates(filepath.Join(cacheDir, dir.Name()), path, recipe); err != nil {
-				return err
-			}
+			skeletons = append(skeletons, filepath.Join(cacheDir, "templates", "skeletons", dir.Name()))
 		}
 
 		if manifest.Provides.Persistence == recipe.Persistence.Type {
-			if err := s.copyTemplates(filepath.Join(cacheDir, dir.Name()), path, recipe); err != nil {
-				return err
-			}
+			skeletons = append(skeletons, filepath.Join(cacheDir, "templates", "skeletons", dir.Name()))
 		}
 	}
 
-	return nil
+	return s.mergerService.Merge(skeletons, path)
 }
 
 func (s *service) copyTemplates(sourceDir, targetDir string, recipe *recipe.Recipe) error {

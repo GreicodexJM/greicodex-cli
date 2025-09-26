@@ -174,7 +174,7 @@ de receta del proyecto.`,
 				return fmt.Errorf("error durante la inicialización: %w", err)
 			}
 
-			if err := scaffolderService.Scaffold(targetPath, &answers); err != nil {
+			if err := scaffolderService.Scaffold(targetPath, cacheDir, &answers); err != nil {
 				return fmt.Errorf("error durante el scaffolding: %w", err)
 			}
 

@@ -48,7 +48,7 @@ func (d *GitDownloader) sparseClone(ctx context.Context, url, branch, cacheDir s
 
 	// Define the sparse checkout directory
 	sparseCheckoutFile := filepath.Join(cacheDir, ".git", "info", "sparse-checkout")
-	if err := os.WriteFile(sparseCheckoutFile, []byte("templates/*"), 0644); err != nil {
+	if err := os.WriteFile(sparseCheckoutFile, []byte("templates"), 0644); err != nil {
 		return fmt.Errorf("failed to write sparse-checkout file: %w", err)
 	}
 

@@ -7,7 +7,7 @@ import (
 
 // ScaffolderService defines the port for the project scaffolding service.
 type ScaffolderService interface {
-	Scaffold(path string, recipe *recipe.Recipe) error
+	Scaffold(path, cacheDir string, recipe *recipe.Recipe) error
 	GetTemplates() ([]fs.DirEntry, error)
 	GetTemplateFile(path string) ([]byte, error)
 }
