@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+
+{{ if eq .Stack.persistence "PostgreSQL" }}
+psycopg2-binary
+sqlalchemy
+{{ else if eq .Stack.persistence "MySQL" }}
+mysqlclient
+sqlalchemy
+{{ end }}
+
+# Testing
+pytest
+flake8

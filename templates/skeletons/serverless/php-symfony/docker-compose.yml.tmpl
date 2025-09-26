@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile.tmpl
+    ports:
+      - "9000:9000"
+    volumes:
+      - .:/var/www/html
+  {{ if eq .Stack.persistence "PostgreSQL" }}
+  postgres:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: {{ .Project.Name }}
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+  {{ else if eq .Stack.persistence "MySQL" }}
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: {{ .Project.Name }}
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+  {{ end }}

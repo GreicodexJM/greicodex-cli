@@ -1,0 +1,54 @@
+# {{ .Project.Name }}
+
+This project was generated with Greicodex CLI.
+
+## Prerequisites
+
+- Python 3.9
+- Docker
+
+## Getting Started
+
+1.  **Install dependencies:**
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+2.  **Run the application:**
+
+    ```bash
+    uvicorn src.main:app --reload
+    ```
+
+3.  **Run with Docker:**
+
+    ```bash
+    docker build -t {{ .Project.Name }} .
+    docker run -p 8000:8000 {{ .Project.Name }}
+    ```
+
+## Deployment
+
+{{ if eq .Stack.deployment "Lambda" }}
+### AWS Lambda
+
+To deploy to AWS Lambda, you'll need to have the [Serverless Framework](https://www.serverless.com/) installed and your AWS credentials configured.
+
+Then, run the following command:
+
+```bash
+serverless deploy
+```
+
+{{ else if eq .Stack.deployment "KNative" }}
+### KNative
+
+To deploy to KNative, you'll need to have `kn` CLI installed and your Kubernetes cluster configured.
+
+Then, run the following command:
+
+```bash
+kn service apply -f service.yaml
+```
+{{ end }}

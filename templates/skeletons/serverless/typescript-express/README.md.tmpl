@@ -1,0 +1,54 @@
+# {{ .Project.Name }}
+
+This project was generated with Greicodex CLI.
+
+## Prerequisites
+
+- Node.js 18
+- Docker
+- npm
+
+## Getting Started
+
+1.  **Install dependencies:**
+
+    ```bash
+    npm install
+    ```
+
+2.  **Run the application:**
+
+    ```bash
+    npm start
+    ```
+
+3.  **Run with Docker Compose:**
+
+    ```bash
+    docker-compose up -d
+    ```
+
+## Deployment
+
+{{ if eq .Stack.deployment "Lambda" }}
+### AWS Lambda
+
+To deploy to AWS Lambda, you'll need to have the [Serverless Framework](https://www.serverless.com/) installed and your AWS credentials configured.
+
+Then, run the following command:
+
+```bash
+serverless deploy
+```
+
+{{ else if eq .Stack.deployment "KNative" }}
+### KNative
+
+To deploy to KNative, you'll need to have `kn` CLI installed and your Kubernetes cluster configured.
+
+Then, run the following command:
+
+```bash
+kn service apply -f service.yaml
+```
+{{ end }}

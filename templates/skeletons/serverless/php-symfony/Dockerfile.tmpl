@@ -1,0 +1,21 @@
+# Build stage
+FROM composer:2 as composer_build
+
+WORKDIR /app
+
+COPY composer.json .
+RUN composer install --no-dev --no-scripts --no-autoloader
+
+# Final stage
+FROM php:8.2-fpm-alpine
+
+WORKDIR /var/www/html
+
+COPY --from=composer_build /app/vendor/ /app/vendor/
+COPY . .
+
+RUN docker-php-ext-install pdo pdo_mysql
+
+EXPOSE 9000
+
+CMD ["php-fpm"]

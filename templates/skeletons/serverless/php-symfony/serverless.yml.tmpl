@@ -1,0 +1,27 @@
+{{ if eq .Stack.deployment "Lambda" }}
+service: {{ .Project.Name }}
+
+provider:
+    name: aws
+    region: us-east-1
+    runtime: provided.al2
+
+plugins:
+    - ./vendor/bref/bref
+
+functions:
+    api:
+        handler: public/index.php
+        description: 'Symfony API'
+        timeout: 28 # in seconds (API Gateway has a timeout of 29 seconds)
+        layers:
+            - ${bref:layer.php-82-fpm}
+        events:
+            -   httpApi: '*'
+
+# Exclude files from deployment
+package:
+    patterns:
+        - '!node_modules/**'
+        - '!tests/**'
+{{ end }}

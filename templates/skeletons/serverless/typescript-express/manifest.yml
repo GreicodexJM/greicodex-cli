@@ -1,0 +1,24 @@
+name: typescript-express
+description: Stack to create a Serverless API in Typescript with Express.
+type: serverless
+provides:
+  language: Typescript
+  tooling: Express
+options:
+  persistence:
+    message: "¿Qué tipo de persistencia usarás?"
+    values:
+      - "None"
+      - "PostgreSQL"
+      - "MySQL"
+  deployment:
+    message: "¿Dónde quieres desplegar la aplicación?"
+    values:
+      - "Lambda"
+      - "KNative"
+  ci:
+    message: "¿Qué pipeline de CI/CD quieres usar?"
+    values:
+      - "None"
+      - "GitHub Actions"
+      - "Bitbucket Pipelines"

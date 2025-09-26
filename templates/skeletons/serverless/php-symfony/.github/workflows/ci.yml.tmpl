@@ -1,0 +1,33 @@
+{{ if eq .Stack.ci "GitHub Actions" }}
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+
+    - name: Install dependencies
+      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+    - name: Lint with phpcs
+      run: vendor/bin/phpcs --standard=PSR12 src tests
+
+    - name: Test with phpunit
+      run: vendor/bin/phpunit
+
+    - name: Scan for secrets with gitleaks
+      uses: zricethezav/gitleaks-action@v10
+{{ end }}

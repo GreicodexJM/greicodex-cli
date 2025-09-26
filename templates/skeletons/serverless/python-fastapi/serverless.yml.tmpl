@@ -1,0 +1,19 @@
+{{ if eq .Stack.deployment "Lambda" }}
+service: {{ .Project.Name }}
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-east-1
+
+functions:
+  api:
+    handler: src.main.handler
+    events:
+      - httpApi: '*'
+
+plugins:
+  - serverless-python-requirements
+{{ end }}

@@ -1,10 +1,24 @@
-name: angular
-description: Pila tecnológica para aplicaciones web con Angular.
-type: code
+name: typescript-angular
+description: Stack to create a Web SPA in Typescript with Angular.
+type: spa
 provides:
-  language: TypeScript
+  language: Typescript
   tooling: Angular
-  runtime: Node.js
-  persistence: Stateless
-  dependencyManagement: NPM
-  buildReleaseRun: npm build, npm start
+options:
+  backend:
+    message: "¿Usarás un backend de API?"
+    values:
+      - "None"
+      - "API"
+  deployment:
+    message: "¿Dónde quieres desplegar la aplicación?"
+    values:
+      - "Netlify"
+      - "Docker Nginx"
+      - "KNative"
+  ci:
+    message: "¿Qué pipeline de CI/CD quieres usar?"
+    values:
+      - "None"
+      - "GitHub Actions"
+      - "Bitbucket Pipelines"

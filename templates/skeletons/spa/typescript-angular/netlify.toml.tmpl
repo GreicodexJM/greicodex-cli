@@ -1,8 +1,0 @@
-[build]
-  command = "npm run build --prod"
-  publish = "dist/{{ .Project.Name | ToLower }}"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200

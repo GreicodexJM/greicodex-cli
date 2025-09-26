@@ -1,0 +1,24 @@
+name: php-symfony
+description: Stack to create a Serverless API in PHP with Symfony 7.
+type: serverless
+provides:
+  language: PHP
+  tooling: Symfony
+options:
+  persistence:
+    message: "¿Qué tipo de persistencia usarás?"
+    values:
+      - "None"
+      - "PostgreSQL"
+      - "MySQL"
+  deployment:
+    message: "¿Dónde quieres desplegar la aplicación?"
+    values:
+      - "Lambda"
+      - "KNative"
+  ci:
+    message: "¿Qué pipeline de CI/CD quieres usar?"
+    values:
+      - "None"
+      - "GitHub Actions"
+      - "Bitbucket Pipelines"

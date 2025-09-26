@@ -1,0 +1,13 @@
+{{ if eq .Stack.deployment "KNative" }}
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: {{ .Project.Name }}
+spec:
+  template:
+    spec:
+      containers:
+        - image: {{ .Project.Name }}
+          ports:
+            - containerPort: 3000
+{{ end }}

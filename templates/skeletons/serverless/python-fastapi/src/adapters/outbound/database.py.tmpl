@@ -1,0 +1,17 @@
+{{ if or (eq .Stack.persistence "PostgreSQL") (eq .Stack.persistence "MySQL") }}
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import os
+
+{{ if eq .Stack.persistence "PostgreSQL" }}
+SQLALCHEMY_DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://user:password@host:port/db")
+{{ else if eq .Stack.persistence "MySQL" }}
+SQLALCHEMY_DATABASE_URL = os.environ.get("DATABASE_URL", "mysql://user:password@host:port/db")
+{{ end }}
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+{{ end }}
