@@ -4,7 +4,7 @@ services:
   php:
     build:
       context: .
-      dockerfile: Dockerfile.tmpl
+      dockerfile: Dockerfile
     volumes:
       - .:/var/www/html
   {{ if eq .Stack.deployment "Docker Nginx" }}

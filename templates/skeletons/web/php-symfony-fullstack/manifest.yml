@@ -5,11 +5,20 @@ provides:
   language: PHP
   tooling: Symfony
 options:
-  backend:
-    message: "¿Usarás un backend de API?"
+  linter:
+    message: "¿Qué tipo de chequeos usarás?"
+    values:
+      - "phpcs"
+  tests:
+    message: "¿Qué tipo de pruebas usarás?"
+    values:
+      - "phpunit"
+  persistence:
+    message: "¿Qué tipo de persistencia usarás?"
     values:
       - "None"
-      - "API"
+      - "PostgreSQL"
+      - "MySQL"
   deployment:
     message: "¿Dónde quieres desplegar la aplicación?"
     values:

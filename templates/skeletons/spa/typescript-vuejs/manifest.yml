@@ -5,6 +5,14 @@ provides:
   language: Typescript
   tooling: VueJS
 options:
+  linter:
+    message: "¿Qué tipo de chequeos usarás?"
+    values:
+      - "ESLint"
+  tests:
+    message: "¿Qué tipo de pruebas usarás?"
+    values:
+      - "vitest"
   backend:
     message: "¿Usarás un backend de API?"
     values:

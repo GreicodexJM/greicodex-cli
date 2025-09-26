@@ -5,6 +5,14 @@ provides:
   language: PHP
   tooling: Symfony
 options:
+  linter:
+    message: "¿Qué tipo de chequeos usarás?"
+    values:
+      - "phpcs"
+  tests:
+    message: "¿Qué tipo de pruebas usarás?"
+    values:
+      - "phpunit"
   persistence:
     message: "¿Qué tipo de persistencia usarás?"
     values:

@@ -5,6 +5,14 @@ provides:
   language: Typescript
   tooling: Express
 options:
+  linter:
+    message: "¿Qué tipo de chequeos usarás?"
+    values:
+      - "ESLint"
+  tests:
+    message: "¿Qué tipo de pruebas usarás?"
+    values:
+      - "jest"
   persistence:
     message: "¿Qué tipo de persistencia usarás?"
     values:
