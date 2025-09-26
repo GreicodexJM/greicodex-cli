@@ -8,6 +8,10 @@ RUN composer config --no-plugins allow-plugins.symfony/flex true \
         && composer config --no-plugins allow-plugins.symfony/runtime true \
         && composer install --no-dev --no-scripts --no-autoloader
 
+FROM bref/php-82-fpm-dev as dev
+COPY --from=composer_build /app/vendor/ /var/task/vendor/
+COPY . .
+
 # Final stage
 FROM php:8.2-fpm-alpine
 
