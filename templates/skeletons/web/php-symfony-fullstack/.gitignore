@@ -1,0 +1,19 @@
+/vendor/
+/var/
+/.env.local
+/.env.*.local
+
+# Mac
+.DS_Store
+
+# Symfony
+/public/build/
+/public/bundles/
+/var/
+/vendor/
+.env.local
+.env.local.php
+.env.*.local
+
+# PHPUnit
+/phpunit.result.cache

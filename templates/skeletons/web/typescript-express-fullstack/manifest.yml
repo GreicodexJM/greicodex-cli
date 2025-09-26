@@ -1,0 +1,28 @@
+name: typescript-express-fullstack
+description: Stack to create a Web Fullstack project in Typescript with Express.
+type: web
+provides:
+  language: Typescript
+  tooling: Express
+options:
+  backend:
+    message: "¿Usarás un backend de API?"
+    values:
+      - "None"
+      - "API"
+  persistence:
+    message: "¿Qué tipo de persistencia usarás?"
+    values:
+      - "None"
+      - "PostgreSQL"
+      - "MySQL"
+  deployment:
+    message: "¿Dónde quieres desplegar la aplicación?"
+    values:
+      - "Docker NodeJS"
+  ci:
+    message: "¿Qué pipeline de CI/CD quieres usar?"
+    values:
+      - "None"
+      - "GitHub Actions"
+      - "Bitbucket Pipelines"

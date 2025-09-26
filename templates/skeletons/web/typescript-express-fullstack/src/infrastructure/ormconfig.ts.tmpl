@@ -1,0 +1,27 @@
+{{ if or (eq .Stack.persistence "PostgreSQL") (eq .Stack.persistence "MySQL") }}
+import { DataSource } from "typeorm";
+
+export const AppDataSource = new DataSource({
+    {{ if eq .Stack.persistence "PostgreSQL" }}
+    type: "postgres",
+    {{ else if eq .Stack.persistence "MySQL" }}
+    type: "mysql",
+    {{ end }}
+    host: process.env.DB_HOST || "localhost",
+    port: Number(process.env.DB_PORT) || 5432,
+    username: process.env.DB_USERNAME || "user",
+    password: process.env.DB_PASSWORD || "password",
+    database: process.env.DB_DATABASE || "{{ .Project.Name }}",
+    synchronize: true,
+    logging: false,
+    entities: [
+        "src/domain/entities/**/*.ts"
+    ],
+    migrations: [
+        "src/infrastructure/migrations/**/*.ts"
+    ],
+    subscribers: [
+        "src/infrastructure/subscribers/**/*.ts"
+    ]
+})
+{{ end }}

@@ -1,0 +1,17 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+-   repo: https://github.com/pre-commit/mirrors-eslint
+    rev: 'v8.55.0'
+    hooks:
+    -   id: eslint
+        files: \.[jt]sx?$
+        types: [file]
+-   repo: https://github.com/zricethezav/gitleaks
+    rev: v8.15.2
+    hooks:
+    -   id: gitleaks-detect

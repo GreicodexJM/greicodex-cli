@@ -1,0 +1,22 @@
+{{ if or (eq .Stack.persistence "PostgreSQL") (eq .Stack.persistence "MySQL") }}
+doctrine:
+    dbal:
+        {{ if eq .Stack.persistence "PostgreSQL" }}
+        url: '%env(resolve:DATABASE_URL)%'
+        driver: 'pdo_pgsql'
+        {{ else if eq .Stack.persistence "MySQL" }}
+        url: '%env(resolve:DATABASE_URL)%'
+        driver: 'pdo_mysql'
+        {{ end }}
+        server_version: '13'
+    orm:
+        auto_generate_proxy_classes: true
+        naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+        auto_mapping: true
+        mappings:
+            App:
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Domain'
+                prefix: 'App\Domain'
+                alias: App
+{{ end }}

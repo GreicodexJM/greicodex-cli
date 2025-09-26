@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile.tmpl
+    volumes:
+      - .:/var/www/html
+  {{ if eq .Stack.deployment "Docker Nginx" }}
+  nginx:
+    image: nginx:1.21.3-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+  {{ else if eq .Stack.deployment "Docker Apache" }}
+  apache:
+    image: httpd:2.4
+    ports:
+      - "80:80"
+    volumes:
+      - .:/usr/local/apache2/htdocs/
+      - ./docker/apache/httpd.conf:/usr/local/apache2/conf/httpd.conf
+  {{ else if eq .Stack.deployment "Docker Nunit" }}
+  nunit:
+    image: nginx:1.21.3-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nunit/nunit.conf:/etc/nginx/conf.d/default.conf
+  {{ end }}
+  {{ if eq .Stack.persistence "PostgreSQL" }}
+  postgres:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: {{ .Project.Name }}
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+  {{ else if eq .Stack.persistence "MySQL" }}
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: {{ .Project.Name }}
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+  {{ end }}

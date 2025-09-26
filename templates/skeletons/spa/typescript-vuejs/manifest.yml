@@ -1,0 +1,24 @@
+name: typescript-vuejs
+description: Stack to create a Web SPA in Typescript with VueJS.
+type: spa
+provides:
+  language: Typescript
+  tooling: VueJS
+options:
+  backend:
+    message: "¿Usarás un backend de API?"
+    values:
+      - "None"
+      - "API"
+  deployment:
+    message: "¿Dónde quieres desplegar la aplicación?"
+    values:
+      - "Netlify"
+      - "Docker Nginx"
+      - "KNative"
+  ci:
+    message: "¿Qué pipeline de CI/CD quieres usar?"
+    values:
+      - "None"
+      - "GitHub Actions"
+      - "Bitbucket Pipelines"

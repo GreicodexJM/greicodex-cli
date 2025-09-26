@@ -1,0 +1,24 @@
+name: php-symfony-fullstack
+description: Stack to create a Web Fullstack project in PHP with Symfony 7.
+type: web
+provides:
+  language: PHP
+  tooling: Symfony
+options:
+  backend:
+    message: "¿Usarás un backend de API?"
+    values:
+      - "None"
+      - "API"
+  deployment:
+    message: "¿Dónde quieres desplegar la aplicación?"
+    values:
+      - "Docker Nginx"
+      - "Docker Apache"
+      - "Docker Nunit"
+  ci:
+    message: "¿Qué pipeline de CI/CD quieres usar?"
+    values:
+      - "None"
+      - "GitHub Actions"
+      - "Bitbucket Pipelines"
