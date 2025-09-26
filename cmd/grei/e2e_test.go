@@ -193,7 +193,7 @@ project:
 }
 
 func createDummyTemplates(t *testing.T, dir string) {
-	templateDir := filepath.Join(dir, ".grei-cli", "templates", "templates")
+	templateDir := filepath.Join(dir, ".grei-cli", "templates")
 	err := os.MkdirAll(templateDir, 0755)
 	assert.NoError(t, err)
 

@@ -48,7 +48,7 @@ func (s *service) GetTemplates() ([]fs.DirEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	return os.ReadDir(filepath.Join(cacheDir, "templates"))
+	return os.ReadDir(cacheDir)
 }
 
 func (s *service) GetTemplateFile(path string) ([]byte, error) {
@@ -66,15 +66,14 @@ func (s *service) Scaffold(path string, recipe *recipe.Recipe) error {
 	if err != nil {
 		return err
 	}
-	templatesPath := filepath.Join(cacheDir, "templates")
 
 	// 1. Copy generic templates
-	if err := s.copyTemplates(filepath.Join(templatesPath, "generic"), path, recipe); err != nil {
+	if err := s.copyTemplates(filepath.Join(cacheDir, "generic"), path, recipe); err != nil {
 		return err
 	}
 
 	// 2. Copy stack-specific templates
-	templateDirs, err := os.ReadDir(templatesPath)
+	templateDirs, err := os.ReadDir(cacheDir)
 	if err != nil {
 		return err
 	}
@@ -84,7 +83,7 @@ func (s *service) Scaffold(path string, recipe *recipe.Recipe) error {
 			continue
 		}
 
-		manifestPath := filepath.Join(templatesPath, dir.Name(), "manifest.yml")
+		manifestPath := filepath.Join(cacheDir, dir.Name(), "manifest.yml")
 		manifestFile, err := s.fsRepo.ReadFile(manifestPath)
 		if err != nil {
 			fmt.Printf("warn: could not read manifest for template %s: %v\n", dir.Name(), err)
@@ -98,13 +97,13 @@ func (s *service) Scaffold(path string, recipe *recipe.Recipe) error {
 		}
 
 		if manifest.Provides.Language == recipe.Stack.Language && manifest.Provides.Tooling == recipe.Stack.Tooling {
-			if err := s.copyTemplates(filepath.Join(templatesPath, dir.Name()), path, recipe); err != nil {
+			if err := s.copyTemplates(filepath.Join(cacheDir, dir.Name()), path, recipe); err != nil {
 				return err
 			}
 		}
 
 		if manifest.Provides.Persistence == recipe.Persistence.Type {
-			if err := s.copyTemplates(filepath.Join(templatesPath, dir.Name()), path, recipe); err != nil {
+			if err := s.copyTemplates(filepath.Join(cacheDir, dir.Name()), path, recipe); err != nil {
 				return err
 			}
 		}

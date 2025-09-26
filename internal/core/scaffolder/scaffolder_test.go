@@ -15,9 +15,9 @@ func TestScaffold_GoCli(t *testing.T) {
 	defer fsMock.Clean()
 
 	fsMock.AddManifest("code", "go-cli", "Go", "Cobra", "")
-	fsMock.AddTemplate("templates/generic/README.md.tmpl", "README for {{ .Project.Name }}")
-	fsMock.AddTemplate("templates/generic/.gitignore.tmpl", "*.log")
-	fsMock.AddTemplate("templates/go-cli/Makefile.tmpl", "BINARY_NAME={{ .Project.Name }}")
+	fsMock.AddTemplate("generic/README.md.tmpl", "README for {{ .Project.Name }}")
+	fsMock.AddTemplate("generic/.gitignore.tmpl", "*.log")
+	fsMock.AddTemplate("go-cli/Makefile.tmpl", "BINARY_NAME={{ .Project.Name }}")
 
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
@@ -70,8 +70,8 @@ func TestScaffold_Postgresql(t *testing.T) {
 	defer fsMock.Clean()
 
 	fsMock.AddManifest("persistence", "postgresql", "", "", "postgresql")
-	fsMock.AddTemplate("templates/generic/README.md.tmpl", "README for {{ .Project.Name }}")
-	fsMock.AddTemplate("templates/postgresql/docker-compose.yml.tmpl", `
+	fsMock.AddTemplate("generic/README.md.tmpl", "README for {{ .Project.Name }}")
+	fsMock.AddTemplate("postgresql/docker-compose.yml.tmpl", `
 services:
   db:
     image: postgres
@@ -127,8 +127,8 @@ func TestScaffold_Generic(t *testing.T) {
 	fsMock := filesystem.NewMockRepository()
 	defer fsMock.Clean()
 
-	fsMock.AddTemplate("templates/generic/README.md.tmpl", "README for {{ .Project.Name }}")
-	fsMock.AddTemplate("templates/generic/.gitignore.tmpl", "*.log")
+	fsMock.AddTemplate("generic/README.md.tmpl", "README for {{ .Project.Name }}")
+	fsMock.AddTemplate("generic/.gitignore.tmpl", "*.log")
 
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{
@@ -166,7 +166,7 @@ func TestScaffold_WriteError(t *testing.T) {
 	fsMock := filesystem.NewMockRepository()
 	defer fsMock.Clean()
 
-	fsMock.AddTemplate("templates/generic/README.md.tmpl", "README for {{ .Project.Name }}")
+	fsMock.AddTemplate("generic/README.md.tmpl", "README for {{ .Project.Name }}")
 
 	projRecipe := &recipe.Recipe{
 		Project: recipe.Project{

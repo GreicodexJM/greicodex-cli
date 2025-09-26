@@ -77,7 +77,7 @@ func (s *service) InitializeProject(path string, gitInit bool) error {
 	}
 
 	for dest, tmpl := range filesToCreate {
-		templatePath := filepath.Join(cacheDir, "templates", tmpl)
+		templatePath := filepath.Join(cacheDir, tmpl)
 		content, err := s.fsRepo.ReadFile(templatePath)
 		if err != nil {
 			return fmt.Errorf("failed to read template file: %w", err)
@@ -125,7 +125,7 @@ func (s *service) InitializeProject(path string, gitInit bool) error {
 }
 
 func (s *service) checkVersion(cacheDir string) error {
-	manifestPath := filepath.Join(cacheDir, "templates", "manifest.json")
+	manifestPath := filepath.Join(cacheDir, "manifest.json")
 	manifestFile, err := s.fsRepo.ReadFile(manifestPath)
 	if err != nil {
 		return fmt.Errorf("failed to read manifest file: %w", err)

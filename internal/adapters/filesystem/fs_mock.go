@@ -63,7 +63,7 @@ func (m *MockRepository) AddFile(path string, content []byte) {
 }
 
 func (m *MockRepository) AddTemplate(path string, content string) {
-	fullPath := filepath.Join(m.tempDir, "templates", path)
+	fullPath := filepath.Join(m.tempDir, path)
 	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 		panic(err)
 	}
